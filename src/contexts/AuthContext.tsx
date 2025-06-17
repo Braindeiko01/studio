@@ -22,20 +22,25 @@ const AUTH_STORAGE_KEY = 'crDuelsUser';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Remains true for server render and initial client render
+  const [hasMounted, setHasMounted] = useState(false); // To track client mount status
   const router = useRouter();
 
   useEffect(() => {
-    const storedUser = getLocalStorageItem<User>(AUTH_STORAGE_KEY);
-    if (storedUser) {
-      setUser(storedUser);
-    }
-    setIsLoading(false);
+    setHasMounted(true); // Set to true once component mounts on client
   }, []);
 
+  useEffect(() => {
+    if (hasMounted) { // Only run localStorage logic after component has mounted
+      const storedUser = getLocalStorageItem<User>(AUTH_STORAGE_KEY);
+      if (storedUser) {
+        setUser(storedUser);
+      }
+      setIsLoading(false); // Now set isLoading to false
+    }
+  }, [hasMounted]); // Depend on hasMounted
+
   const login = (userData: User) => {
-    // userData now includes the password, which is stored.
-    // Verification happens in LoginPage before this function is called.
     setUser(userData);
     setLocalStorageItem(AUTH_STORAGE_KEY, userData);
   };
@@ -48,8 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const updateUser = (updatedData: Partial<User>) => {
     if (user) {
-      // Ensure password is not accidentally wiped if not part of updatedData
-      // but if it is, it means the user is changing it (though not implemented via this function)
       const newUser = { ...user, ...updatedData };
       setUser(newUser);
       setLocalStorageItem(AUTH_STORAGE_KEY, newUser);
