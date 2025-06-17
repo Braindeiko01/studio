@@ -17,11 +17,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { CrownIcon, LoginIcon, PhoneIcon } from '@/components/icons/ClashRoyaleIcons';
 import { LockKeyholeIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import type { User } from '@/types';
-import { getLocalStorageItem } from '@/lib/storage';
+// User type ya no es necesario para pasar a la acción, actions.ts la conoce
+// import type { User } from '@/types'; 
+// getLocalStorageItem ya no es necesario
+// import { getLocalStorageItem } from '@/lib/storage'; 
 import { loginUserAction } from '@/lib/actions';
 
-const AUTH_STORAGE_KEY = 'crDuelsUser';
+// AUTH_STORAGE_KEY ya no es necesario
+// const AUTH_STORAGE_KEY = 'crDuelsUser';
 
 const loginSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
@@ -53,21 +56,17 @@ export default function LoginPage() {
   const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     setIsLoading(true);
     
-    // Para la simulación, el cliente aún lee de su localStorage para pasarlo al Server Action.
-    // En un sistema real con DB, el Server Action consultaría la DB directamente.
-    const clientStoredUser = getLocalStorageItem<User>(AUTH_STORAGE_KEY);
-    let userForAction: User | undefined = undefined;
+    // Ya no se lee clientStoredUser ni se pasa a la acción
+    // const clientStoredUser = getLocalStorageItem<User>(AUTH_STORAGE_KEY);
+    // let userForAction: User | undefined = undefined;
+    // if (clientStoredUser && clientStoredUser.phone === data.phone && data.phone !== "0000000") {
+    //     userForAction = clientStoredUser;
+    // }
 
-    // Solo pasamos el clientStoredUser si el teléfono coincide con el que se intenta loguear
-    // y no es el usuario demo (ya que el Server Action maneja el demo internamente).
-    if (clientStoredUser && clientStoredUser.phone === data.phone && data.phone !== "0000000") {
-        userForAction = clientStoredUser;
-    }
-
-    const result = await loginUserAction(data, userForAction);
+    const result = await loginUserAction(data); // Se llama a la acción solo con 'data'
 
     if (result.user) {
-      auth.login(result.user); // AuthContext actualiza el estado del cliente y localStorage
+      auth.login(result.user); 
       toast({
         title: "¡Inicio de Sesión Exitoso!",
         description: `¡Bienvenido de nuevo, ${result.user.username}!`,
@@ -139,8 +138,8 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <CartoonButton type="submit" className="w-full" disabled={isLoading} iconLeft={<LoginIcon />}>
-                {isLoading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
+              <CartoonButton type="submit" className="w-full" disabled={isLoading || auth.isLoading} iconLeft={<LoginIcon />}>
+                {isLoading || auth.isLoading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
               </CartoonButton>
             </form>
           </Form>
