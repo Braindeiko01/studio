@@ -1,4 +1,4 @@
-import { Crown, Shield, Swords, Gem, ShieldCheck, ShieldX, UserCircle, Phone, MessageSquare, Coins, Image as ImageIcon, LogIn, UserPlus, PlayCircle, Landmark, Bot, Info } from 'lucide-react';
+import { Crown, Shield, Swords, Gem, ShieldCheck, ShieldX, UserCircle, Phone, MessageSquare, Coins, Image as ImageIcon, LogIn, UserPlus, PlayCircle, Landmark, Bot, Info, ScrollText, LogOut } from 'lucide-react';
 
 // For specific icons, consider creating actual SVG components if lucide doesn't fit the cartoon style.
 // For now, we map generic concepts to Lucide icons.
@@ -20,3 +20,5 @@ export const FindMatchIcon = (props: React.ComponentProps<typeof PlayCircle>) =>
 export const NequiIcon = (props: React.ComponentProps<typeof Landmark>) => <Landmark {...props} />; // Generic bank/payment icon for Nequi
 export const BotIcon = (props: React.ComponentProps<typeof Bot>) => <Bot {...props} />;
 export const InfoIcon = (props: React.ComponentProps<typeof Info>) => <Info {...props} />;
+export const ScrollTextIcon = (props: React.ComponentProps<typeof ScrollText>) => <ScrollText {...props} />;
+export const LogOutIcon = (props: React.ComponentProps<typeof LogOut>) => <LogOut {...props} />;

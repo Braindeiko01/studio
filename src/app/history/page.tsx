@@ -6,11 +6,11 @@ import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/hooks/useAuth';
 import type { Bet } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollText, SwordsIcon, VictoryIcon, DefeatIcon, InfoIcon } from '@/components/icons/ClashRoyaleIcons'; // SwordsIcon might not be used directly here
+import { ScrollTextIcon, VictoryIcon, DefeatIcon, InfoIcon } from '@/components/icons/ClashRoyaleIcons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLocalStorageItem, setLocalStorageItem } from '@/lib/storage';
 
-const BET_HISTORY_STORAGE_KEY = 'crDuelsBetHistory'; // Updated key
+const BET_HISTORY_STORAGE_KEY = 'crDuelsBetHistory';
 
 const HistoryPageContent = () => {
   const { user } = useAuth();
@@ -75,7 +75,7 @@ const HistoryPageContent = () => {
       <Card className="bg-card/80 backdrop-blur-sm shadow-card-medieval border-2 border-primary-dark">
         <CardHeader>
           <CardTitle className="text-4xl font-headline text-primary flex items-center">
-            <ScrollText className="mr-3 h-10 w-10 text-accent" /> Historial de Duelos
+            <ScrollTextIcon className="mr-3 h-10 w-10 text-accent" /> Historial de Duelos
           </CardTitle>
           <CardDescription className="text-lg text-muted-foreground">Revisa tus duelos pasados y tus glorias.</CardDescription>
         </CardHeader>

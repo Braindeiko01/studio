@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CrownIcon, SwordsIcon, UserCircle, LogOut, ScrollText } from 'lucide-react';
+import { CrownIcon, SwordsIcon, AvatarIcon, LogOutIcon, ScrollTextIcon } from '@/components/icons/ClashRoyaleIcons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,8 +23,8 @@ const AppHeader = () => {
 
   const navItems = [
     { href: "/", label: "Home", icon: <SwordsIcon className="h-5 w-5" /> },
-    { href: "/history", label: "History", icon: <ScrollText className="h-5 w-5" /> },
-    { href: "/profile", label: "Profile", icon: <UserCircle className="h-5 w-5" /> },
+    { href: "/history", label: "History", icon: <ScrollTextIcon className="h-5 w-5" /> },
+    { href: "/profile", label: "Profile", icon: <AvatarIcon className="h-5 w-5" /> },
   ];
 
   return (
@@ -63,16 +63,16 @@ const AppHeader = () => {
               <DropdownMenuLabel className="font-headline text-card-foreground">My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer hover:bg-accent/10">
-                <UserCircle className="mr-2 h-4 w-4" />
+                <AvatarIcon className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push('/history')} className="cursor-pointer hover:bg-accent/10">
-                 <ScrollText className="mr-2 h-4 w-4" />
+                 <ScrollTextIcon className="mr-2 h-4 w-4" />
                 <span>Match History</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive-foreground focus:bg-destructive cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOutIcon className="mr-2 h-4 w-4" />
                 <span>Log Out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
