@@ -13,12 +13,12 @@ interface AuthContextType {
   login: (userData: User) => void;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
-  depositBalance: (amount: number) => void; // Nueva función
+  depositBalance: (amount: number) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = 'crDuelsUser'; // Actualizado para reflejar CR Duels
+const AUTH_STORAGE_KEY = 'crDuelsUser';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -34,6 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (userData: User) => {
+    // userData now includes the password, which is stored.
+    // Verification happens in LoginPage before this function is called.
     setUser(userData);
     setLocalStorageItem(AUTH_STORAGE_KEY, userData);
   };
@@ -41,11 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     removeLocalStorageItem(AUTH_STORAGE_KEY);
-    router.push('/login'); // Redirige al login después de cerrar sesión
+    router.push('/login');
   };
   
   const updateUser = (updatedData: Partial<User>) => {
     if (user) {
+      // Ensure password is not accidentally wiped if not part of updatedData
+      // but if it is, it means the user is changing it (though not implemented via this function)
       const newUser = { ...user, ...updatedData };
       setUser(newUser);
       setLocalStorageItem(AUTH_STORAGE_KEY, newUser);

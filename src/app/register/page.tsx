@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { CrownIcon, PhoneIcon, RegisterIcon, UserIcon as AppUserIcon } from '@/components/icons/ClashRoyaleIcons'; // Renamed UserIcon to AppUserIcon
-import { LinkIcon as LucideLinkIcon } from 'lucide-react';
+import { LinkIcon as LucideLinkIcon, LockKeyholeIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
 
@@ -25,7 +25,8 @@ const registerSchema = z.object({
     .max(20, "El nombre de usuario no puede tener más de 20 caracteres")
     .regex(/^[a-zA-Z0-9_]+$/, "Nombre de usuario inválido. Solo letras, números y guiones bajos (_)."),
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
-  clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. P01Y2G3R)"),
+  password: z.string().min(4, "La contraseña debe tener al menos 4 caracteres"),
+  clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. P01Y2G3R)").optional(),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
     .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=[0289PYLQGRJCUV]{3,}&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido. Ejemplo: https://link.clashroyale.com/invite/friend/es?tag=TAG&token=token&platform=android" }),
@@ -44,6 +45,7 @@ export default function RegisterPage() {
     defaultValues: {
       username: '',
       phone: '',
+      password: '',
       clashTag: '',
       friendLink: '',
     },
@@ -57,7 +59,6 @@ export default function RegisterPage() {
       const match = watchedFriendLink.match(tagRegex);
       if (match && match[1]) {
         const extractedTag = match[1].toUpperCase();
-        // Solo actualiza si el tag extraído es diferente al actual, para evitar ciclos o sobrescribir ediciones manuales innecesarias
         if (form.getValues('clashTag') !== extractedTag) {
           form.setValue('clashTag', extractedTag, { shouldValidate: true, shouldDirty: true });
         }
@@ -75,18 +76,24 @@ export default function RegisterPage() {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    const clashTagValue = data.clashTag 
+      ? (data.clashTag.toUpperCase().startsWith('#') ? data.clashTag.toUpperCase() : `#${data.clashTag.toUpperCase()}`)
+      : '#DEFAULTTAG';
+
+
     const newUser: User = {
       id: `user-${Date.now()}`,
       username: data.username,
       phone: data.phone,
-      clashTag: data.clashTag.toUpperCase().startsWith('#') ? data.clashTag.toUpperCase() : `#${data.clashTag.toUpperCase()}`,
+      password: data.password,
+      clashTag: clashTagValue,
       nequiAccount: data.phone,
       friendLink: data.friendLink,
       avatarUrl: `https://placehold.co/100x100.png?text=${data.username[0]?.toUpperCase() || 'R'}`,
       balance: 0,
     };
     
-    login(newUser);
+    login(newUser); // The login function in AuthContext now stores the user object which includes the password
     toast({
       title: "¡Registro Exitoso!",
       description: `¡Bienvenido a CR Duels, ${newUser.username}!`,
@@ -136,6 +143,19 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg text-foreground flex items-center"><LockKeyholeIcon className="mr-2 h-5 w-5 text-primary" />Contraseña</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Tu contraseña secreta" {...field} className="text-lg py-6 border-2 focus:border-primary" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="friendLink"
@@ -150,7 +170,6 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              {/* El campo de ClashTag se elimina de la vista, pero su valor se sigue manejando programáticamente */}
               <CartoonButton type="submit" variant="accent" className="w-full mt-6" disabled={isLoading} iconLeft={<RegisterIcon />}>
                 {isLoading ? 'Registrando...' : 'Registrarse y Jugar'}
               </CartoonButton>
