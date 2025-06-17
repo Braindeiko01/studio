@@ -25,7 +25,7 @@ const registerSchema = z.object({
     .max(20, "El nombre de usuario no puede tener más de 20 caracteres")
     .regex(/^[a-zA-Z0-9_]+$/, "Nombre de usuario inválido. Solo letras, números y guiones bajos (_)."),
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
-  clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. #XXXXXXXX)"),
+  clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. P01Y2G3R)"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
     .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=[0289PYLQGRJCUV]{3,}&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido. Ejemplo: https://link.clashroyale.com/invite/friend/es?tag=TAG&token=token&platform=android" }),
@@ -48,6 +48,22 @@ export default function RegisterPage() {
       friendLink: '',
     },
   });
+
+  const watchedFriendLink = form.watch('friendLink');
+
+  useEffect(() => {
+    if (watchedFriendLink) {
+      const tagRegex = /tag=([0289PYLQGRJCUV]{3,})&/i;
+      const match = watchedFriendLink.match(tagRegex);
+      if (match && match[1]) {
+        const extractedTag = match[1].toUpperCase();
+        // Solo actualiza si el tag extraído es diferente al actual, para evitar ciclos o sobrescribir ediciones manuales innecesarias
+        if (form.getValues('clashTag') !== extractedTag) {
+          form.setValue('clashTag', extractedTag, { shouldValidate: true, shouldDirty: true });
+        }
+      }
+    }
+  }, [watchedFriendLink, form]);
 
  useEffect(() => {
     if (isAuthenticated) {
@@ -122,19 +138,6 @@ export default function RegisterPage() {
               />
               <FormField
                 control={form.control}
-                name="clashTag"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-lg text-foreground flex items-center"><ShieldIcon className="mr-2 h-5 w-5 text-primary" />Tag de Clash Royale</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ej. #P01Y2G3R" {...field} className="text-lg py-6 border-2 focus:border-primary" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="friendLink"
                 render={({ field }) => (
                   <FormItem>
@@ -144,6 +147,19 @@ export default function RegisterPage() {
                     </FormControl>
                     <FormMessage />
                     <p className="text-xs text-muted-foreground mt-1">Puedes encontrarlo en Clash Royale: Social &gt; Amigos &gt; Invitar amigo.</p>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="clashTag"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg text-foreground flex items-center"><ShieldIcon className="mr-2 h-5 w-5 text-primary" />Tag de Clash Royale</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ej. P01Y2G3R (se autocompleta desde el link)" {...field} className="text-lg py-6 border-2 focus:border-primary" />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
