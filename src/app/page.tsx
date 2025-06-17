@@ -200,7 +200,7 @@ const HomePageContent = () => {
             Buscar Duelo
           </CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Elige tu modo de juego preferido. ¡La apuesta es de $6,000 COP! El ganador se lleva el bote total de $12,000 COP.
+            Elige tu modo de juego preferido. ¡La apuesta es de $6,000 COP! El ganador se lleva $11,000 COP (después de una comisión de $1,000 COP).
             <br /> Necesitas tener al menos $6,000 COP de saldo.
           </CardDescription>
         </CardHeader>
