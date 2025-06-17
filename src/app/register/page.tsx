@@ -15,14 +15,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { CrownIcon, NequiIcon, PhoneIcon, RegisterIcon, ShieldIcon } from '@/components/icons/ClashRoyaleIcons';
-import { LinkIcon as LucideLinkIcon } from 'lucide-react'; // Renamed to avoid conflict if any
+import { LinkIcon as LucideLinkIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
 
 const registerSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. #XXXXXXXX)"),
-  nequiAccount: z.string().min(7, "La cuenta Nequi debe tener al menos 7 dígitos").regex(/^\d+$/, "La cuenta Nequi solo debe contener dígitos"),
+  nequiAccount: z.string().min(7, "El número de teléfono Nequi debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono Nequi solo debe contener dígitos"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
     .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=[0289PYLQGRJCUV]{3,}&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido. Ejemplo: https://link.clashroyale.com/invite/friend/es?tag=TAG&token=token&platform=android" }),
@@ -58,22 +58,22 @@ export default function RegisterPage() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const newUser: User = {
-      id: `user-${Date.now()}`, // Generate a unique ID
+      id: `user-${Date.now()}`,
       phone: data.phone,
       clashTag: data.clashTag.toUpperCase().startsWith('#') ? data.clashTag.toUpperCase() : `#${data.clashTag.toUpperCase()}`,
       nequiAccount: data.nequiAccount,
       friendLink: data.friendLink,
       avatarUrl: `https://placehold.co/100x100.png?text=${data.clashTag[0]?.toUpperCase() || 'R'}`,
-      balance: 0, // New users start with 0 balance, or a small welcome gift
+      balance: 0, 
     };
     
-    login(newUser); // Log the user in immediately after registration
+    login(newUser); 
     toast({
       title: "¡Registro Exitoso!",
       description: `¡Bienvenido a CR Duels, ${newUser.clashTag}!`,
       variant: "default",
     });
-    router.push('/'); // Redirect to home or dashboard
+    router.push('/'); 
     setIsLoading(false);
   };
 
@@ -121,9 +121,9 @@ export default function RegisterPage() {
                 name="nequiAccount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg text-foreground flex items-center"><NequiIcon className="mr-2 h-5 w-5 text-primary" />Cuenta Nequi</FormLabel>
+                    <FormLabel className="text-lg text-foreground flex items-center"><NequiIcon className="mr-2 h-5 w-5 text-primary" />Número de teléfono enlazado con Nequi</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Tu número de teléfono Nequi" {...field} className="text-lg py-6 border-2 focus:border-primary" />
+                      <Input type="tel" placeholder="Número de teléfono de tu cuenta Nequi" {...field} className="text-lg py-6 border-2 focus:border-primary" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

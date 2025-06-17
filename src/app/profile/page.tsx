@@ -7,10 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label'; // Label component might not be used if InfoRow handles labels
+import { Label } from '@/components/ui/label';
 import { CartoonButton } from '@/components/ui/CartoonButton';
-import { ShieldIcon as ClashTagIcon, Edit3, Save, Link as LinkIcon } from 'lucide-react'; // Used Lucide's Shield for ClashTag
-import { NequiIcon, PhoneIcon } from '@/components/icons/ClashRoyaleIcons'; // Custom icons
+import { ShieldIcon as ClashTagIcon, Edit3, Save, Link as LinkIcon } from 'lucide-react';
+import { NequiIcon, PhoneIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/types';
 
@@ -34,7 +34,6 @@ const ProfilePageContent = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // Validate friendLink format if it's provided and changed
       if (formData.friendLink && !/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=[0289PYLQGRJCUV]{3,}&token=[a-z0-9]+&platform=(android|ios)$/.test(formData.friendLink)) {
         toast({ title: "Error", description: "El formato del link de amigo de Clash Royale es inválido.", variant: "destructive"});
         return;
@@ -44,12 +43,12 @@ const ProfilePageContent = () => {
         updateUser({ 
           clashTag: formData.clashTag, 
           nequiAccount: formData.nequiAccount,
-          avatarUrl: formData.avatarUrl || user.avatarUrl, // Keep old if new is empty
-          friendLink: formData.friendLink || '', // Allow clearing the link
+          avatarUrl: formData.avatarUrl || user.avatarUrl,
+          friendLink: formData.friendLink || '',
         });
         toast({ title: "¡Perfil Actualizado!", description: "Tus cambios han sido guardados.", variant: "default" });
       } else {
-        toast({ title: "Error", description: "Los campos de Tag y Nequi no pueden estar vacíos.", variant: "destructive"});
+        toast({ title: "Error", description: "Los campos de Tag y Número de teléfono Nequi no pueden estar vacíos.", variant: "destructive"});
         setFormData({ clashTag: user.clashTag, nequiAccount: user.nequiAccount, avatarUrl: user.avatarUrl, friendLink: user.friendLink });
       }
     } else {
@@ -111,7 +110,7 @@ const ProfilePageContent = () => {
         </CardHeader>
         <CardContent className="p-6 space-y-2">
           <InfoRow icon={<ClashTagIcon />} label="Tag de Clash Royale" value={user.clashTag} name="clashTag" editingValue={formData.clashTag} onChange={handleInputChange} isEditing={isEditing} />
-          <InfoRow icon={<NequiIcon />} label="Cuenta Nequi" value={user.nequiAccount} name="nequiAccount" editingValue={formData.nequiAccount} onChange={handleInputChange} isEditing={isEditing} />
+          <InfoRow icon={<NequiIcon />} label="Número de teléfono enlazado con Nequi" value={user.nequiAccount} name="nequiAccount" editingValue={formData.nequiAccount} onChange={handleInputChange} isEditing={isEditing} placeholder="Número de teléfono de tu cuenta Nequi"/>
           <InfoRow icon={<LinkIcon />} label="Link de Amigo Clash Royale" value={user.friendLink || "No establecido"} name="friendLink" editingValue={formData.friendLink} onChange={handleInputChange} isEditing={isEditing} placeholder="https://link.clashroyale.com/..." />
           <InfoRow icon={<PhoneIcon />} label="Teléfono Registrado" value={user.phone} />
           <div className="flex items-center space-x-4 py-3">
