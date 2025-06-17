@@ -8,10 +8,17 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['Fredoka', 'sans-serif'],
+        headline: ['Fredoka', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
@@ -28,6 +35,7 @@ export default {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          dark: 'hsl(var(--primary-dark))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -71,6 +79,12 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      boxShadow: {
+        'cartoon': '0 4px 0 hsl(var(--primary-dark)), 0 6px 10px rgba(0,0,0,0.2)',
+        'cartoon-sm': '0 2px 0 hsl(var(--primary-dark)), 0 3px 5px rgba(0,0,0,0.15)',
+        'cartoon-active': '0 2px 0 hsl(var(--primary-dark)), 0 3px 5px rgba(0,0,0,0.2)',
+        'card-medieval': '5px 5px 0px 0px hsl(var(--border))',
+      },
       keyframes: {
         'accordion-down': {
           from: {
@@ -88,10 +102,20 @@ export default {
             height: '0',
           },
         },
+        'subtle-bounce': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-3px)' },
+        },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'subtle-bounce': 'subtle-bounce 1.5s ease-in-out infinite',
+        'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
       },
     },
   },
