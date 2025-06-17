@@ -8,49 +8,28 @@ import type { Bet } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollTextIcon, VictoryIcon, DefeatIcon, InfoIcon } from '@/components/icons/ClashRoyaleIcons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// Ya no se usa localStorage directamente aquí para los bets, se simulará o vendrá del contexto/estado
-// import { getLocalStorageItem, setLocalStorageItem } from '@/lib/storage';
-
-// Ya no se usa esta llave directamente, la lógica de bets se manejará de forma diferente sin persistencia global.
-// const BET_HISTORY_STORAGE_KEY = 'crDuelsBetHistory';
 
 const HistoryPageContent = () => {
-  const { user, isLoading: authIsLoading } = useAuth(); // Renombrado isLoading para evitar conflicto
+  const { user, isLoading: authIsLoading } = useAuth();
   const [bets, setBets] = useState<Bet[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
 
   useEffect(() => {
-    if (!authIsLoading && user) {
-      // Simulación: Si tuviéramos un backend, aquí se haría un fetch del historial de apuestas del usuario.
-      // Por ahora, si el usuario tiene un historial de apuestas en su objeto (lo cual no es el caso actualmente),
-      // o si queremos mockearlo, lo haríamos aquí.
-      // Como no hay persistencia de bets entre sesiones sin localStorage y sin BD,
-      // el historial estará vacío o será mockeado cada vez.
-      
-      // Vamos a mantener la lógica de mock data si no hay bets, para que la página no esté siempre vacía.
-      // En un sistema real, esto vendría del servidor.
-      // Para la simulación, necesitamos una forma de "recordar" los bets del usuario si es que se guardaron en una sesión previa.
-      // Como hemos quitado localStorage, cada vez que se cargue esta página, se usarán los mocks si no hay otra fuente.
-      // Si la lógica de 'bets' se almacenara en el objeto `user` (no es el caso), podríamos usar eso.
-
-      const mockBets: Bet[] = [
-        { id: 'bet1', userId: user.id, matchId: 'match1', amount: 6000, result: 'win', opponentTag: 'RivalPlayer#1', matchDate: new Date(Date.now() - 86400000).toISOString() },
-        { id: 'bet2', userId: user.id, matchId: 'match2', amount: 6000, result: 'loss', opponentTag: 'ProGamer#X', matchDate: new Date(Date.now() - 2 * 86400000).toISOString() },
-        { id: 'bet3', userId: user.id, matchId: 'match3', amount: 6000, result: 'win', opponentTag: 'DuelMaster#7', matchDate: new Date(Date.now() - 3 * 86400000).toISOString() },
-      ].sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime());
-      
-      // Para esta simulación, mostraremos los mock bets.
-      // En un sistema real, `setBets` recibiría los datos del servidor.
-      setBets(mockBets);
+    if (!authIsLoading) {
+      if (user) {
+        // En un sistema real, aquí se haría un fetch del historial de apuestas del usuario desde un backend.
+        // Como actualmente no hay persistencia de apuestas entre sesiones ni un backend,
+        // el historial de `bets` permanecerá vacío.
+        setBets([]); // Inicializa como vacío.
+      } else {
+        setBets([]); // También vacío si no hay usuario
+      }
       setIsPageLoading(false);
-
-    } else if (!authIsLoading && !user) {
-      setIsPageLoading(false); // No hay usuario, no hay historial que cargar
     }
   }, [user, authIsLoading]);
 
   if (isPageLoading || authIsLoading) return <p>Cargando historial de duelos...</p>;
-  if (!user) return <p>Debes iniciar sesión para ver tu historial.</p>; // Mensaje actualizado
+  if (!user) return <p>Debes iniciar sesión para ver tu historial.</p>;
 
   const wonBets = bets.filter(bet => bet.result === 'win');
   const lostBets = bets.filter(bet => bet.result === 'loss');
