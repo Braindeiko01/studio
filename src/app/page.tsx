@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; // Ya no se usa para los botones de cancelar en modal
 import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
 import { Coins, UploadCloud, Swords, Layers, Banknote } from 'lucide-react';
@@ -136,8 +136,6 @@ const HomePageContent = () => {
       });
       return;
     }
-    // En una app real, aquí se llamaría a un Server Action para procesar el retiro.
-    // Y se deduciría el saldo una vez confirmado por el backend.
     toast({
       title: "¡Solicitud de Retiro Recibida!",
       description: `Has solicitado un retiro de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)} a tu cuenta Nequi ${user.nequiAccount}. Se procesará pronto.`,
@@ -174,7 +172,7 @@ const HomePageContent = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <CartoonButton
                     size="medium"
-                    variant="secondary"
+                    variant="default" 
                     onClick={handleOpenDepositModal}
                     className="flex-1 text-lg py-3"
                     iconLeft={<Coins className="h-6 w-6" />}
@@ -183,9 +181,9 @@ const HomePageContent = () => {
                 </CartoonButton>
                 <CartoonButton
                     size="medium"
-                    variant="outline"
+                    variant="accent" 
                     onClick={handleOpenWithdrawModal}
-                    className="flex-1 text-lg py-3 border-accent text-accent hover:bg-accent/10 active:bg-accent/20"
+                    className="flex-1 text-lg py-3"
                     iconLeft={<Banknote className="h-6 w-6" />}
                     disabled={user.balance === 0 || !user.nequiAccount}
                 >
@@ -202,7 +200,7 @@ const HomePageContent = () => {
             Buscar Duelo
           </CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Elige tu modo de juego preferido. ¡La apuesta es de $6,000 COP!
+            Elige tu modo de juego preferido. ¡La apuesta es de $6,000 COP! El ganador se lleva el bote total de $12,000 COP.
             <br /> Necesitas tener al menos $6,000 COP de saldo.
           </CardDescription>
         </CardHeader>
@@ -271,8 +269,9 @@ const HomePageContent = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 p-6 pt-0 mt-6">
-              <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto" size="sm">Cancelar</Button>
+              <CartoonButton variant="secondary" onClick={handleCloseDepositModal} className="w-full sm:w-auto" size="small">Cancelar</CartoonButton>
               <CartoonButton 
+                variant="default"
                 onClick={handleDepositConfirm} 
                 className="w-full sm:w-auto"
                 size="small"
@@ -308,15 +307,16 @@ const HomePageContent = () => {
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
                   className="text-lg py-3 h-12 border-2 focus:border-primary"
-                  min="1" // Podría ser un mínimo más alto en un caso real
+                  min="1" 
                   max={user.balance}
                 />
                  <p className="text-xs text-muted-foreground mt-1">Saldo disponible para retirar: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(user.balance)}</p>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 p-6 pt-0 mt-6">
-              <Button variant="outline" onClick={handleCloseWithdrawModal} className="w-full sm:w-auto" size="sm">Cancelar</Button>
+              <CartoonButton variant="secondary" onClick={handleCloseWithdrawModal} className="w-full sm:w-auto" size="small">Cancelar</CartoonButton>
               <CartoonButton 
+                variant="default"
                 onClick={handleWithdrawConfirm} 
                 className="w-full sm:w-auto"
                 size="small"
@@ -341,5 +341,6 @@ export default function HomePage() {
     </AppLayout>
   );
 }
+    
 
     
