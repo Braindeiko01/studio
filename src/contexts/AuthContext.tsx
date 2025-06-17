@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { User } from '@/types';
@@ -12,11 +13,12 @@ interface AuthContextType {
   login: (userData: User) => void;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
+  depositBalance: (amount: number) => void; // Nueva función
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = 'royaleDuelUser';
+const AUTH_STORAGE_KEY = 'crDuelsUser'; // Actualizado para reflejar CR Duels
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -39,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     removeLocalStorageItem(AUTH_STORAGE_KEY);
-    router.push('/login');
+    router.push('/login'); // Redirige al login después de cerrar sesión
   };
   
   const updateUser = (updatedData: Partial<User>) => {
@@ -50,8 +52,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const depositBalance = (amount: number) => {
+    if (user && amount > 0) {
+      const newBalance = user.balance + amount;
+      const updatedUser = { ...user, balance: newBalance };
+      setUser(updatedUser);
+      setLocalStorageItem(AUTH_STORAGE_KEY, updatedUser);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, updateUser, depositBalance }}>
       {children}
     </AuthContext.Provider>
   );
