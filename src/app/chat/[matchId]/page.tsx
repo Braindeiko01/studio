@@ -19,8 +19,8 @@ import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 
 
-const CHAT_MESSAGES_STORAGE_KEY_PREFIX = 'crDuelsChatMessages_'; // Updated prefix
-const BET_HISTORY_STORAGE_KEY = 'crDuelsBetHistory'; // Updated prefix
+const CHAT_MESSAGES_STORAGE_KEY_PREFIX = 'crDuelsChatMessages_';
+const BET_HISTORY_STORAGE_KEY = 'crDuelsBetHistory';
 
 
 const ChatPageContent = () => {
@@ -90,8 +90,15 @@ const ChatPageContent = () => {
   
   const handleShareFriendLink = () => {
     if (!user) return;
-    const linkToShare = user.friendLink || "[Link no proporcionado por el usuario]";
-    const friendLinkMessage = `${user.clashTag} compartió su link de amigo: ${linkToShare}`;
+    const linkToShare = user.friendLink;
+    
+    let friendLinkMessage: string;
+
+    if (linkToShare) {
+      friendLinkMessage = `${user.clashTag} compartió su link de amigo: <a href="${linkToShare}" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">${linkToShare}</a>`;
+    } else {
+      friendLinkMessage = `${user.clashTag} intentó compartir su link de amigo, pero no lo tiene configurado en su perfil.`;
+    }
     
     const message: ChatMessage = {
       id: `sys-link-${user.id}-${Date.now()}`,
@@ -171,7 +178,11 @@ const ChatPageContent = () => {
             <div key={msg.id} className={`flex ${msg.senderId === user.id ? 'justify-end' : msg.senderId === 'system' ? 'justify-center' : 'justify-start'}`}>
               {msg.isSystemMessage ? (
                 <div className="text-xs text-center text-muted-foreground italic bg-muted p-2 rounded-lg shadow-sm max-w-md my-1 break-words">
-                  {msg.text}
+                  {msg.text.includes("compartió su link de amigo:") && msg.text.includes("<a href=") ? (
+                    <span dangerouslySetInnerHTML={{ __html: msg.text }} />
+                  ) : (
+                    msg.text
+                  )}
                 </div>
               ) : (
                 <div className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-md ${msg.senderId === user.id ? 'bg-primary text-primary-foreground rounded-br-none ml-auto' : 'bg-card text-card-foreground rounded-bl-none mr-auto'}`}>
@@ -264,3 +275,4 @@ export default function ChatPage() {
     </AppLayout>
   );
 }
+
