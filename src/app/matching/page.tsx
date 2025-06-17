@@ -26,62 +26,65 @@ const MatchingPageContent = () => {
   const mode = searchParams.get('mode') as 'classic' | 'triple-draft' | null;
   const modeDisplay = mode === 'classic' ? 'Batalla Clásica' : mode === 'triple-draft' ? 'Triple Elección' : 'Duelo Estándar';
 
-  const [status, setStatus] = useState(`Buscando oponente para ${modeDisplay}...`);
+  const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
   const [opponent, setOpponent] = useState<{ id: string; clashTag: string; avatarUrl: string; dataAiHint: string; } | null>(null);
 
+  // Effect for setting up search and progress
   useEffect(() => {
     if (!user) return;
 
-    // Redirect if mode is not present or invalid, or if balance is insufficient
     if (!mode || (mode !== 'classic' && mode !== 'triple-draft')) {
-      router.replace('/'); // Or a specific error page
+      router.replace('/'); 
       return;
     }
     if (user.balance < 6000) {
-        // This check might be redundant if page.tsx already prevents navigation
-        // but good for robustness.
         router.replace('/');
         return;
     }
 
+    // Reset state for a new search
+    setOpponent(null);
+    setProgress(0);
+    setStatus(`Buscando oponente para ${modeDisplay}...`);
 
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 5; 
-      });
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + 10, 100)); // Faster progress for demo
     }, 250); 
 
-    const searchTimeout = setTimeout(() => {
+    // Timeout to find an opponent
+    const searchTimeoutId = setTimeout(() => {
       const randomOpponent = mockOpponents[Math.floor(Math.random() * mockOpponents.length)];
-      setOpponent(randomOpponent);
-      setStatus(`¡Oponente Encontrado: ${randomOpponent.clashTag} para ${modeDisplay}!`);
-    }, 5000); 
-
-    const matchStartTimeout = setTimeout(() => {
-      if (opponent || mockOpponents[0]) { 
-        const currentOpponent = opponent || mockOpponents[0];
-        setStatus(`¡Duelo iniciando con ${currentOpponent.clashTag} (${modeDisplay})!`);
-        const matchId = `match_${user.id}_vs_${currentOpponent.id}_${Date.now()}_${mode}`;
-        router.push(`/chat/${matchId}?opponentTag=${encodeURIComponent(currentOpponent.clashTag)}&opponentAvatar=${encodeURIComponent(currentOpponent.avatarUrl)}`);
-      } else {
-         router.push('/'); 
-      }
-    }, 8000); 
+      setOpponent(randomOpponent); 
+      clearInterval(progressInterval); 
+      setProgress(100);
+    }, 5000); // Find opponent after 5 seconds
 
     return () => {
-      clearInterval(interval);
-      clearTimeout(searchTimeout);
-      clearTimeout(matchStartTimeout);
+      clearInterval(progressInterval);
+      clearTimeout(searchTimeoutId);
     };
-  }, [user, router, opponent, mode, modeDisplay]);
+  }, [user, router, mode, modeDisplay]); 
+
+  // Effect to handle navigation once an opponent is found
+  useEffect(() => {
+    if (opponent && user && mode && modeDisplay && router) { // Added router to dependencies
+        setStatus(`¡Oponente Encontrado: ${opponent.clashTag} para ${modeDisplay}!`);
+
+        const matchStartTimeoutId = setTimeout(() => {
+            setStatus(`¡Duelo iniciando con ${opponent.clashTag} (${modeDisplay})!`);
+            const matchId = `match_${user.id}_vs_${opponent.id}_${Date.now()}_${mode}`;
+            router.push(`/chat/${matchId}?opponentTag=${encodeURIComponent(opponent.clashTag)}&opponentAvatar=${encodeURIComponent(opponent.avatarUrl)}`);
+        }, 3000); // Navigate 3 seconds after opponent is found
+
+        return () => {
+            clearTimeout(matchStartTimeoutId);
+        };
+    }
+  }, [opponent, user, router, mode, modeDisplay]);
+
 
   if (!user) return <p>Cargando...</p>;
-  // Early return if mode is invalid (although useEffect should redirect)
   if (!mode || (mode !== 'classic' && mode !== 'triple-draft')) {
       return <p>Modo de juego no válido. Redirigiendo...</p>;
   }
