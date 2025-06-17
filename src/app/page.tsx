@@ -77,6 +77,7 @@ const HomePageContent = () => {
       return;
     }
 
+    // depositBalance(amount); // This would actually add the balance
     toast({
       title: "¡Solicitud de Depósito Recibida!",
       description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante está siendo revisado. Tu saldo se actualizará una vez verificado.`,
@@ -142,7 +143,7 @@ const HomePageContent = () => {
                 Luego, ingresa el monto exacto y adjunta el comprobante.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 p-6">
               <div>
                 <Label htmlFor="depositAmount" className="text-lg text-foreground mb-2 block">
                   Monto a Depositar (COP)
@@ -172,7 +173,7 @@ const HomePageContent = () => {
                 {depositScreenshotFile && <p className="text-sm text-muted-foreground mt-2">Seleccionado: {depositScreenshotFile.name}</p>}
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
+            <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-6 p-6 pt-0">
               <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto" size="sm">Cancelar</Button>
               <CartoonButton 
                 onClick={handleDepositConfirm} 
@@ -199,3 +200,4 @@ export default function HomePage() {
     </AppLayout>
   );
 }
+
