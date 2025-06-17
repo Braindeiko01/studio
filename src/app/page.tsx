@@ -13,16 +13,20 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
-import { Coins, UploadCloud, Swords, Layers } from 'lucide-react';
+import { Coins, UploadCloud, Swords, Layers, Banknote } from 'lucide-react';
 
 
 const HomePageContent = () => {
-  const { user } = useAuth(); // Removed depositBalance as it's not used directly here for now
+  const { user } = useAuth(); 
   const router = useRouter();
   const { toast } = useToast();
+  
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositScreenshotFile, setDepositScreenshotFile] = useState<File | null>(null);
+
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
 
   if (!user) {
     return <p>Cargando datos del usuario...</p>;
@@ -40,6 +44,7 @@ const HomePageContent = () => {
     router.push(`/matching?mode=${mode}`);
   };
 
+  // Deposit Modal Logic
   const handleOpenDepositModal = () => {
     setIsDepositModalOpen(true);
     setDepositAmount('6000'); 
@@ -85,7 +90,6 @@ const HomePageContent = () => {
       return;
     }
 
-    // depositBalance(amount); // This would actually add the balance
     toast({
       title: "¡Solicitud de Depósito Recibida!",
       description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante (${depositScreenshotFile.name}) está siendo revisado. Tu saldo se actualizará una vez verificado.`,
@@ -95,6 +99,54 @@ const HomePageContent = () => {
     setDepositAmount('6000');
     setDepositScreenshotFile(null);
   };
+
+  // Withdraw Modal Logic
+  const handleOpenWithdrawModal = () => {
+    if (!user.nequiAccount) {
+       toast({
+        title: "Cuenta Nequi no configurada",
+        description: "Por favor, configura tu número de Nequi en tu perfil para poder retirar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsWithdrawModalOpen(true);
+    setWithdrawAmount('');
+  };
+
+  const handleCloseWithdrawModal = () => {
+    setIsWithdrawModalOpen(false);
+  };
+
+  const handleWithdrawConfirm = () => {
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Monto Inválido",
+        description: "Por favor, ingresa un monto de retiro válido y positivo.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (amount > user.balance) {
+      toast({
+        title: "Saldo Insuficiente",
+        description: "No puedes retirar más de tu saldo actual.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // En una app real, aquí se llamaría a un Server Action para procesar el retiro.
+    // Y se deduciría el saldo una vez confirmado por el backend.
+    toast({
+      title: "¡Solicitud de Retiro Recibida!",
+      description: `Has solicitado un retiro de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)} a tu cuenta Nequi ${user.nequiAccount}. Se procesará pronto.`,
+      variant: "default",
+    });
+    setIsWithdrawModalOpen(false);
+    setWithdrawAmount('');
+  };
+
 
   return (
     <div className="space-y-8">
@@ -118,16 +170,28 @@ const HomePageContent = () => {
             <p className="text-sm text-muted-foreground">Saldo Actual</p>
           </div>
         </CardHeader>
-        <CardContent className="p-6 text-center space-y-4">
-          <CartoonButton
-            size="medium"
-            variant="secondary"
-            onClick={handleOpenDepositModal}
-            className="w-full max-w-xs mx-auto text-lg py-3"
-            iconLeft={<Coins className="h-6 w-6" />}
-          >
-            Depositar Saldo
-          </CartoonButton>
+        <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <CartoonButton
+                    size="medium"
+                    variant="secondary"
+                    onClick={handleOpenDepositModal}
+                    className="flex-1 text-lg py-3"
+                    iconLeft={<Coins className="h-6 w-6" />}
+                >
+                    Depositar Saldo
+                </CartoonButton>
+                <CartoonButton
+                    size="medium"
+                    variant="outline"
+                    onClick={handleOpenWithdrawModal}
+                    className="flex-1 text-lg py-3 border-accent text-accent hover:bg-accent/10 active:bg-accent/20"
+                    iconLeft={<Banknote className="h-6 w-6" />}
+                    disabled={user.balance === 0 || !user.nequiAccount}
+                >
+                    Retirar Saldo
+                </CartoonButton>
+            </div>
         </CardContent>
       </Card>
 
@@ -164,6 +228,7 @@ const HomePageContent = () => {
       </Card>
 
 
+      {/* Deposit Modal */}
       {isDepositModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in-up">
           <Card className="w-full max-w-md shadow-xl border-2 border-accent">
@@ -220,6 +285,50 @@ const HomePageContent = () => {
           </Card>
         </div>
       )}
+
+      {/* Withdraw Modal */}
+      {isWithdrawModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in-up">
+          <Card className="w-full max-w-md shadow-xl border-2 border-accent">
+            <CardHeader>
+              <CardTitle className="text-3xl font-headline text-accent text-center">Retirar Saldo</CardTitle>
+              <CardDescription className="text-center text-muted-foreground mt-2">
+                Ingresa el monto que deseas retirar. El dinero se enviará a tu cuenta Nequi registrada: <strong className="text-primary">{user.nequiAccount || 'No configurada'}</strong>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 p-6">
+              <div>
+                <Label htmlFor="withdrawAmount" className="text-lg text-foreground mb-2 block">
+                  Monto a Retirar (COP)
+                </Label>
+                <Input 
+                  id="withdrawAmount" 
+                  type="number" 
+                  placeholder="ej. 10000" 
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="text-lg py-3 h-12 border-2 focus:border-primary"
+                  min="1" // Podría ser un mínimo más alto en un caso real
+                  max={user.balance}
+                />
+                 <p className="text-xs text-muted-foreground mt-1">Saldo disponible para retirar: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(user.balance)}</p>
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 p-6 pt-0 mt-6">
+              <Button variant="outline" onClick={handleCloseWithdrawModal} className="w-full sm:w-auto" size="sm">Cancelar</Button>
+              <CartoonButton 
+                onClick={handleWithdrawConfirm} 
+                className="w-full sm:w-auto"
+                size="small"
+                iconLeft={<Banknote className="h-5 w-5" />}
+                disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > user.balance}
+              >
+                Confirmar Retiro
+              </CartoonButton>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
       
     </div>
   );
@@ -233,3 +342,4 @@ export default function HomePage() {
   );
 }
 
+    
