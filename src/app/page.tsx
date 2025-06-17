@@ -80,7 +80,7 @@ const HomePageContent = () => {
     // depositBalance(amount); // This would actually add the balance
     toast({
       title: "¡Solicitud de Depósito Recibida!",
-      description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante está siendo revisado. Tu saldo se actualizará una vez verificado.`,
+      description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante (${depositScreenshotFile.name}) está siendo revisado. Tu saldo se actualizará una vez verificado.`,
       variant: "default",
     });
     setIsDepositModalOpen(false);
@@ -139,7 +139,7 @@ const HomePageContent = () => {
               <CardTitle className="text-3xl font-headline text-accent text-center">Depositar Saldo</CardTitle>
               <CardDescription className="text-center text-muted-foreground mt-2">
                 Realiza una transferencia Nequi a la cuenta <strong className="text-primary">305-288-1517</strong>.
-                El monto del depósito debe ser en múltiplos de <strong className="text-primary">6,000 COP</strong> (ej. 6.000, 12.000, 18.000, etc.), con un mínimo de 6,000 COP.
+                El monto del depósito debe ser un <strong className="text-primary">mínimo de 6,000 COP</strong> y en <strong className="text-primary">múltiplos de 6,000 COP</strong> (ej. 6.000, 12.000, 18.000, etc.).
                 Luego, ingresa el monto exacto y adjunta el comprobante.
               </CardDescription>
             </CardHeader>
@@ -168,12 +168,12 @@ const HomePageContent = () => {
                   type="file" 
                   accept="image/*" 
                   onChange={(e) => setDepositScreenshotFile(e.target.files ? e.target.files[0] : null)}
-                  className="text-base file:bg-primary file:text-primary-foreground hover:file:bg-primary-dark file:rounded-md file:border-0 file:px-4 file:py-2 file:mr-3 file:font-semibold"
+                  className="h-12 w-full border border-input rounded-md px-3 py-2 text-base file:bg-primary file:text-primary-foreground hover:file:bg-primary-dark file:rounded-md file:border-0 file:px-4 file:py-2 file:mr-3 file:font-semibold"
                 />
                 {depositScreenshotFile && <p className="text-sm text-muted-foreground mt-2">Seleccionado: {depositScreenshotFile.name}</p>}
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-6 p-6 pt-0">
+            <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 p-6 pt-0 mt-6">
               <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto" size="sm">Cancelar</Button>
               <CartoonButton 
                 onClick={handleDepositConfirm} 
