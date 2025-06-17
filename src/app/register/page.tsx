@@ -14,12 +14,16 @@ import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { CrownIcon, PhoneIcon, RegisterIcon, ShieldIcon } from '@/components/icons/ClashRoyaleIcons';
+import { CrownIcon, PhoneIcon, RegisterIcon, ShieldIcon, UserIcon as AppUserIcon } from '@/components/icons/ClashRoyaleIcons'; // Renamed UserIcon to AppUserIcon
 import { LinkIcon as LucideLinkIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
 
 const registerSchema = z.object({
+  username: z.string()
+    .min(3, "El nombre de usuario debe tener al menos 3 caracteres")
+    .max(20, "El nombre de usuario no puede tener más de 20 caracteres")
+    .regex(/^[a-zA-Z0-9_]+$/, "Nombre de usuario inválido. Solo letras, números y guiones bajos (_)."),
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. #XXXXXXXX)"),
   friendLink: z.string()
@@ -38,6 +42,7 @@ export default function RegisterPage() {
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      username: '',
       phone: '',
       clashTag: '',
       friendLink: '',
@@ -52,26 +57,26 @@ export default function RegisterPage() {
 
   const onSubmit: SubmitHandler<RegisterFormValues> = async (data) => {
     setIsLoading(true);
-    // Simulate API call for registration
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const newUser: User = {
       id: `user-${Date.now()}`,
+      username: data.username,
       phone: data.phone,
       clashTag: data.clashTag.toUpperCase().startsWith('#') ? data.clashTag.toUpperCase() : `#${data.clashTag.toUpperCase()}`,
-      nequiAccount: data.phone, // Use main phone number as Nequi account by default
+      nequiAccount: data.phone,
       friendLink: data.friendLink,
-      avatarUrl: `https://placehold.co/100x100.png?text=${data.clashTag[0]?.toUpperCase() || 'R'}`,
-      balance: 0, 
+      avatarUrl: `https://placehold.co/100x100.png?text=${data.username[0]?.toUpperCase() || 'R'}`,
+      balance: 0,
     };
     
-    login(newUser); 
+    login(newUser);
     toast({
       title: "¡Registro Exitoso!",
-      description: `¡Bienvenido a CR Duels, ${newUser.clashTag}!`,
+      description: `¡Bienvenido a CR Duels, ${newUser.username}!`,
       variant: "default",
     });
-    router.push('/'); 
+    router.push('/');
     setIsLoading(false);
   };
 
@@ -88,6 +93,19 @@ export default function RegisterPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg text-foreground flex items-center"><AppUserIcon className="mr-2 h-5 w-5 text-primary" />Nombre de Usuario</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ej. DuelistaPro" {...field} className="text-lg py-6 border-2 focus:border-primary" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="phone"

@@ -2,6 +2,7 @@
 export interface User {
   id: string;
   phone: string;
+  username: string; // Nombre de usuario único en la plataforma
   clashTag: string;
   nequiAccount: string;
   avatarUrl?: string; // URL to placeholder or actual avatar

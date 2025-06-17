@@ -45,38 +45,37 @@ export default function LoginPage() {
 
   const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     setIsLoading(true);
-    // Simulate API call for login
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // In a real app, you would fetch user data based on phone number.
-    // For this scaffold, we'll use a mock user if phone is "0000000" or create a new-like user.
     let mockUser: User;
-    if (data.phone === "0000000") { // Demo existing user
+    if (data.phone === "0000000") { 
         mockUser = {
             id: 'user-123-demo',
             phone: data.phone,
+            username: 'DemoUser',
             clashTag: 'Player#ABC',
-            nequiAccount: '3001112233', // Specific Nequi for demo user
+            nequiAccount: '3001112233', 
             avatarUrl: 'https://placehold.co/100x100.png?text=P',
             balance: 50000,
             friendLink: 'https://link.clashroyale.com/invite/friend/es?tag=DEMOTAG&token=demotoken&platform=android',
         };
-    } else { // Simulate a new user being "found" or a generic user for other numbers
+    } else { 
         mockUser = {
             id: `user-${Date.now()}`,
             phone: data.phone,
+            username: `User${data.phone.slice(-4)}`,
             clashTag: 'NewUser#TAG',
-            nequiAccount: data.phone, // Nequi number defaults to main phone
+            nequiAccount: data.phone, 
             avatarUrl: `https://placehold.co/100x100.png?text=${data.phone[0]}`,
-            balance: 10000, // Starting balance
-            friendLink: undefined, // New users would set this on registration
+            balance: 10000, 
+            friendLink: undefined, 
         };
     }
     
     login(mockUser);
     toast({
       title: "¡Inicio de Sesión Exitoso!",
-      description: `¡Bienvenido de nuevo, ${mockUser.clashTag}!`,
+      description: `¡Bienvenido de nuevo, ${mockUser.username}!`,
       variant: "default",
     });
     router.push('/');
