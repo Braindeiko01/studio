@@ -112,15 +112,6 @@ const HomePageContent = () => {
         </CardHeader>
         <CardContent className="p-6 text-center space-y-4">
           <CartoonButton
-            size="default"
-            variant="accent"
-            onClick={handleFindMatch}
-            className="w-full max-w-md mx-auto text-2xl py-6 shadow-lg hover:shadow-xl"
-            iconLeft={<FindMatchIcon className="h-8 w-8" />}
-          >
-            Buscar Duelo ($6,000 COP)
-          </CartoonButton>
-          <CartoonButton
             size="medium"
             variant="secondary"
             onClick={handleOpenDepositModal}
