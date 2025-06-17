@@ -38,11 +38,13 @@ const AppHeader = () => {
         {isAuthenticated && user && (
           <nav className="hidden md:flex items-center space-x-2">
             {navItems.map(item => (
-              <Link key={item.href} href={item.href} legacyBehavior passHref>
-                <a className={`flex items-center gap-1 px-4 py-2 rounded-md text-primary-foreground hover:bg-primary-dark hover:text-accent transition-colors ${pathname === item.href ? 'bg-primary-dark text-accent font-semibold' : ''}`}>
-                  {item.icon}
-                  {item.label}
-                </a>
+              <Link 
+                key={item.href} 
+                href={item.href}
+                className={`flex items-center gap-1 px-4 py-2 rounded-md text-primary-foreground hover:bg-primary-dark hover:text-accent transition-colors ${pathname === item.href ? 'bg-primary-dark text-accent font-semibold' : ''}`}
+              >
+                {item.icon}
+                {item.label}
               </Link>
             ))}
           </nav>
@@ -88,11 +90,13 @@ const AppHeader = () => {
         <div className="md:hidden bg-primary/90 py-2">
           <nav className="container mx-auto flex justify-around items-center">
             {navItems.map(item => (
-              <Link key={item.href} href={item.href} legacyBehavior passHref>
-                <a className={`flex flex-col items-center p-2 rounded-md text-primary-foreground hover:bg-primary-dark hover:text-accent transition-colors ${pathname === item.href ? 'bg-primary-dark text-accent' : ''}`}>
-                  {item.icon}
-                  <span className="text-xs">{item.label}</span>
-                </a>
+              <Link 
+                key={item.href} 
+                href={item.href} 
+                className={`flex flex-col items-center p-2 rounded-md text-primary-foreground hover:bg-primary-dark hover:text-accent transition-colors ${pathname === item.href ? 'bg-primary-dark text-accent' : ''}`}
+              >
+                {item.icon}
+                <span className="text-xs">{item.label}</span>
               </Link>
             ))}
           </nav>
