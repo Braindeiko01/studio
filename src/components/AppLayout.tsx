@@ -13,7 +13,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           {children}
         </main>
         <footer className="bg-primary/10 text-center py-4 text-sm text-foreground/70 font-headline">
-          RoyaleDuel &copy; {new Date().getFullYear()} - Bet Responsibly
+          CR Duel &copy; {new Date().getFullYear()} - Bet Responsibly
         </footer>
       </div>
     </AuthGuard>

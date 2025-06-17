@@ -89,7 +89,7 @@ const ProfilePageContent = () => {
           ) : (
             <CardTitle className="text-4xl font-headline text-primary">{user.clashTag}</CardTitle>
           )}
-          <CardDescription className="text-muted-foreground mt-1 text-lg">Manage your RoyaleDuel identity.</CardDescription>
+          <CardDescription className="text-muted-foreground mt-1 text-lg">Manage your CR Duel identity.</CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-2">
           <InfoRow icon={<ShieldIcon />} label="Clash Royale Tag" value={user.clashTag} name="clashTag" editingValue={formData.clashTag} onChange={handleInputChange} isEditing={isEditing} />

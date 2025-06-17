@@ -85,7 +85,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-card-medieval border-2 border-primary-dark">
         <CardHeader className="text-center">
           <CrownIcon className="mx-auto h-16 w-16 text-primary mb-4" />
-          <CardTitle className="text-4xl font-headline text-primary">RoyaleDuel Login</CardTitle>
+          <CardTitle className="text-4xl font-headline text-primary">CR Duel Login</CardTitle>
           <CardDescription className="text-muted-foreground text-base">
             Enter your phone number to join the battle!
           </CardDescription>
