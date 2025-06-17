@@ -119,7 +119,7 @@ const ChatPageContent = () => {
 
     toast({
       title: "¡Resultado Enviado!",
-      description: `Reportaste una ${result === 'win' ? 'victoria' : 'derrota'}. Esperando al oponente si es necesario, o verificación del administrador.`,
+      description: `Reportaste una ${result === 'win' ? 'victoria' : 'derrota'}. ${screenshotFile ? 'Comprobante adjuntado.' : 'Sin comprobante.'} Esperando al oponente si es necesario, o verificación del administrador.`,
       variant: "default",
     });
     
@@ -131,6 +131,7 @@ const ChatPageContent = () => {
       result: result,
       opponentTag: opponentTag,
       matchDate: new Date().toISOString(),
+      // screenshotUrl: screenshotFile ? URL.createObjectURL(screenshotFile) : undefined // Example: could store a local URL if needed for immediate display, but not persisted as actual file
     };
 
     const historyKey = `${BET_HISTORY_STORAGE_KEY}_${user.id}`;
@@ -139,6 +140,7 @@ const ChatPageContent = () => {
     
     setResultSubmitted(true);
     setIsSubmittingResult(false); 
+    setScreenshotFile(null);
     
      const resultMessageText = `${user.clashTag} envió el resultado del duelo como ${result === 'win' ? 'VICTORIA' : 'DERROTA'}. ${screenshotFile ? 'Captura de pantalla proporcionada.' : 'No se proporcionó captura.'}`;
      const resultSystemMessage: ChatMessage = {
@@ -258,7 +260,7 @@ const ChatPageContent = () => {
               </div>
             </CardContent>
             <CardFooter>
-                <Button variant="outline" onClick={() => setIsSubmittingResult(false)} className="w-full text-lg py-3">Cancelar</Button>
+                <Button variant="outline" onClick={() => { setIsSubmittingResult(false); setScreenshotFile(null); }} className="w-full text-lg py-3">Cancelar</Button>
             </CardFooter>
           </Card>
         </div>

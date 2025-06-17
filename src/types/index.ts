@@ -2,39 +2,40 @@
 export interface User {
   id: string;
   phone: string;
-  username: string; // Nombre de usuario único en la plataforma
+  username: string; 
   clashTag: string;
   nequiAccount: string;
-  avatarUrl?: string; // URL to placeholder or actual avatar
-  balance: number; // in COP
-  friendLink?: string; // Clash Royale friend invitation link
+  avatarUrl?: string; 
+  balance: number; 
+  friendLink?: string; 
 }
 
 export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';
-export type MatchResult = 'win' | 'loss' | 'draw'; // 'draw' might not apply or need special handling
+export type MatchResult = 'win' | 'loss' | 'draw'; 
 
 export interface Match {
   id: string;
   player1Id: string;
-  player2Id?: string; // Becomes defined when matched
-  amount: number; // Fixed at 6000 COP
+  player2Id?: string; 
+  amount: number; 
   status: MatchStatus;
-  createdAt: string; // ISO date string
-  updatedAt: string; // ISO date string
+  createdAt: string; 
+  updatedAt: string; 
   chatId?: string;
   winnerId?: string;
-  resultScreenshotPlayer1?: string; // URL or base64 placeholder
-  resultScreenshotPlayer2?: string;
+  resultScreenshotPlayer1Url?: string; 
+  resultScreenshotPlayer2Url?: string;
 }
 
 export interface Bet {
   id: string;
   userId: string;
   matchId: string;
-  amount: number; // Should be same as Match.amount
-  result?: MatchResult; // win/loss for this user
-  opponentTag?: string; // For display in history
-  matchDate: string; // ISO date string
+  amount: number; 
+  result?: MatchResult; 
+  opponentTag?: string; 
+  matchDate: string; 
+  screenshotUrl?: string; // Added field for screenshot URL/placeholder
 }
 
 export interface ChatMessage {
@@ -42,6 +43,6 @@ export interface ChatMessage {
   matchId: string;
   senderId: string;
   text: string;
-  timestamp: string; // ISO date string
-  isSystemMessage?: boolean; // For messages like "Player X shared friend link"
+  timestamp: string; 
+  isSystemMessage?: boolean; 
 }
