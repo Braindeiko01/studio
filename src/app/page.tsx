@@ -63,7 +63,7 @@ const HomePageContent = () => {
     if (amount % 6000 !== 0) {
       toast({
         title: "Monto Inválido",
-        description: "El monto del depósito debe ser un múltiplo de 6,000 COP.",
+        description: "El monto del depósito debe ser un múltiplo de 6,000 COP (ej. 6000, 12000, 18000).",
         variant: "destructive",
       });
       return;
@@ -77,7 +77,10 @@ const HomePageContent = () => {
       return;
     }
 
-    depositBalance(amount);
+    // Simulate balance update. In a real app, this would happen after admin verification.
+    // For now, we'll update it directly for demonstration.
+    // depositBalance(amount); // This would be called after verification in a real scenario
+
     toast({
       title: "¡Solicitud de Depósito Recibida!",
       description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante está siendo revisado. Tu saldo se actualizará una vez verificado.`,
@@ -138,9 +141,9 @@ const HomePageContent = () => {
             <CardHeader>
               <CardTitle className="text-3xl font-headline text-accent text-center">Depositar Saldo</CardTitle>
               <CardDescription className="text-center text-muted-foreground mt-2">
-                Realiza una transferencia Nequi a la cuenta <strong className="text-primary">3XX-XXX-XXXX</strong>.
-                El monto debe ser mínimo 6,000 COP y en múltiplos de 6,000 COP.
-                Luego, ingresa el monto y adjunta el comprobante.
+                Realiza una transferencia Nequi a la cuenta <strong className="text-primary">305-288-1517</strong>.
+                El monto mínimo de depósito es <strong className="text-primary">6,000 COP</strong> y debe ser en múltiplos de 6,000 COP (ej. 6.000, 12.000, 18.000, etc.).
+                Luego, ingresa el monto exacto y adjunta el comprobante.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
