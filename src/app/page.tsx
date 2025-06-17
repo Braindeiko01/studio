@@ -13,11 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
-import { Coins, UploadCloud } from 'lucide-react';
+import { Coins, UploadCloud, Swords, Layers } from 'lucide-react';
 
 
 const HomePageContent = () => {
-  const { user, depositBalance } = useAuth();
+  const { user } = useAuth(); // Removed depositBalance as it's not used directly here for now
   const router = useRouter();
   const { toast } = useToast();
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -28,8 +28,16 @@ const HomePageContent = () => {
     return <p>Cargando datos del usuario...</p>;
   }
 
-  const handleFindMatch = () => {
-    router.push('/matching');
+  const handleFindMatch = (mode: 'classic' | 'triple-draft') => {
+    if (user.balance < 6000) {
+      toast({
+        title: "Saldo Insuficiente",
+        description: "Necesitas al menos $6,000 COP para buscar un duelo. Por favor, deposita saldo.",
+        variant: "destructive",
+      });
+      return;
+    }
+    router.push(`/matching?mode=${mode}`);
   };
 
   const handleOpenDepositModal = () => {
@@ -94,7 +102,7 @@ const HomePageContent = () => {
         <CardHeader className="bg-primary/10 p-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
           <div className="flex items-center space-x-4">
             <Avatar className="h-20 w-20 border-4 border-accent shadow-lg">
-              <AvatarImage src={user.avatarUrl || `https://placehold.co/100x100.png?text=${user.clashTag?.[0] || 'U'}`} alt={user.clashTag} data-ai-hint="gaming avatar" />
+              <AvatarImage src={user.avatarUrl || `https://placehold.co/100x100.png?text=${user.clashTag?.[0] || 'U'}`} alt={user.clashTag} data-ai-hint="gaming avatar"/>
               <AvatarFallback className="text-3xl bg-primary/30 text-primary-foreground">{user.clashTag?.[0] || 'U'}</AvatarFallback>
             </Avatar>
             <div>
@@ -122,6 +130,39 @@ const HomePageContent = () => {
           </CartoonButton>
         </CardContent>
       </Card>
+
+      <Card className="bg-card/80 backdrop-blur-sm shadow-card-medieval border-2 border-primary-dark">
+        <CardHeader>
+          <CardTitle className="text-3xl font-headline text-primary flex items-center justify-center">
+            <FindMatchIcon className="mr-3 h-8 w-8 text-accent" />
+            Buscar Duelo
+          </CardTitle>
+          <CardDescription className="text-center text-muted-foreground">
+            Elige tu modo de juego preferido. ¡La apuesta es de $6,000 COP!
+            <br /> Necesitas tener al menos $6,000 COP de saldo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <CartoonButton
+            onClick={() => handleFindMatch('classic')}
+            className="w-full sm:w-auto"
+            iconLeft={<Swords className="h-6 w-6" />}
+            disabled={user.balance < 6000}
+          >
+            Batalla Clásica
+          </CartoonButton>
+          <CartoonButton
+            onClick={() => handleFindMatch('triple-draft')}
+            className="w-full sm:w-auto"
+            variant="accent" 
+            iconLeft={<Layers className="h-6 w-6" />}
+            disabled={user.balance < 6000}
+          >
+            Triple Elección
+          </CartoonButton>
+        </CardContent>
+      </Card>
+
 
       {isDepositModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in-up">
