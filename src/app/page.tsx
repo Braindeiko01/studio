@@ -162,7 +162,7 @@ const HomePageContent = () => {
                   step="6000"
                 />
               </div>
-              <div className="mb-4"> {/* Added margin-bottom here */}
+              <div className="mb-4">
                 <Label htmlFor="depositScreenshot" className="text-lg text-foreground mb-2 block flex items-center">
                   <UploadCloud className="mr-2 h-5 w-5 text-primary" /> Adjuntar Comprobante Nequi
                 </Label>
@@ -176,7 +176,7 @@ const HomePageContent = () => {
                 {depositScreenshotFile && <p className="text-sm text-muted-foreground mt-2">Seleccionado: {depositScreenshotFile.name}</p>}
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
+            <CardFooter className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-4">
               <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto text-lg py-3">Cancelar</Button>
               <CartoonButton 
                 onClick={handleDepositConfirm} 
