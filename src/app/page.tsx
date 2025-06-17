@@ -34,7 +34,7 @@ const HomePageContent = () => {
 
   const handleOpenDepositModal = () => {
     setIsDepositModalOpen(true);
-    setDepositAmount('');
+    setDepositAmount('6000'); // Default to minimum amount
     setDepositScreenshotFile(null);
   };
 
@@ -52,15 +52,39 @@ const HomePageContent = () => {
       });
       return;
     }
-    // En una app real, aquí se manejaría la subida del depositScreenshotFile
+    if (amount < 6000) {
+      toast({
+        title: "Monto Inválido",
+        description: "El monto mínimo de depósito es de 6,000 COP.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (amount % 6000 !== 0) {
+      toast({
+        title: "Monto Inválido",
+        description: "El monto del depósito debe ser un múltiplo de 6,000 COP.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!depositScreenshotFile) {
+      toast({
+        title: "Comprobante Requerido",
+        description: "Por favor, adjunta el comprobante de la transacción.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     depositBalance(amount);
     toast({
       title: "¡Solicitud de Depósito Recibida!",
-      description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. ${depositScreenshotFile ? 'Tu comprobante está siendo revisado.' : 'No adjuntaste comprobante.'} Tu saldo se actualizará una vez verificado.`,
+      description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante está siendo revisado. Tu saldo se actualizará una vez verificado.`,
       variant: "default",
     });
     setIsDepositModalOpen(false);
-    setDepositAmount('');
+    setDepositAmount('6000');
     setDepositScreenshotFile(null);
   };
 
@@ -115,6 +139,7 @@ const HomePageContent = () => {
               <CardTitle className="text-3xl font-headline text-accent text-center">Depositar Saldo</CardTitle>
               <CardDescription className="text-center text-muted-foreground mt-2">
                 Realiza una transferencia Nequi a la cuenta <strong className="text-primary">3XX-XXX-XXXX</strong>.
+                El monto debe ser mínimo 6,000 COP y en múltiplos de 6,000 COP.
                 Luego, ingresa el monto y adjunta el comprobante.
               </CardDescription>
             </CardHeader>
@@ -126,11 +151,12 @@ const HomePageContent = () => {
                 <Input 
                   id="depositAmount" 
                   type="number" 
-                  placeholder="ej. 10000" 
+                  placeholder="ej. 6000" 
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
                   className="text-lg py-3 h-12 border-2 focus:border-primary"
-                  min="1000"
+                  min="6000"
+                  step="6000"
                 />
               </div>
               <div>
@@ -154,7 +180,7 @@ const HomePageContent = () => {
                 className="w-full sm:w-auto"
                 size="medium"
                 iconLeft={<Coins className="h-5 w-5" />}
-                disabled={!depositAmount || parseFloat(depositAmount) <=0 || !depositScreenshotFile}
+                disabled={!depositAmount || parseFloat(depositAmount) < 6000 || parseFloat(depositAmount) % 6000 !== 0 || !depositScreenshotFile}
               >
                 Confirmar Depósito
               </CartoonButton>
