@@ -11,9 +11,9 @@ import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { SaldoIcon, FindMatchIcon, Gem } from '@/components/icons/ClashRoyaleIcons'; // Gem puede ser para depósito
+import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
-import { Coins } from 'lucide-react';
+import { Coins, UploadCloud } from 'lucide-react';
 
 
 const HomePageContent = () => {
@@ -22,6 +22,7 @@ const HomePageContent = () => {
   const { toast } = useToast();
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
+  const [depositScreenshotFile, setDepositScreenshotFile] = useState<File | null>(null);
 
   if (!user) {
     return <p>Cargando datos del usuario...</p>;
@@ -34,6 +35,7 @@ const HomePageContent = () => {
   const handleOpenDepositModal = () => {
     setIsDepositModalOpen(true);
     setDepositAmount('');
+    setDepositScreenshotFile(null);
   };
 
   const handleCloseDepositModal = () => {
@@ -50,13 +52,16 @@ const HomePageContent = () => {
       });
       return;
     }
+    // En una app real, aquí se manejaría la subida del depositScreenshotFile
     depositBalance(amount);
     toast({
-      title: "¡Depósito Confirmado!",
-      description: `Has depositado ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu nuevo saldo es ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(user.balance + amount)}.`,
+      title: "¡Solicitud de Depósito Recibida!",
+      description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. ${depositScreenshotFile ? 'Tu comprobante está siendo revisado.' : 'No adjuntaste comprobante.'} Tu saldo se actualizará una vez verificado.`,
       variant: "default",
     });
     setIsDepositModalOpen(false);
+    setDepositAmount('');
+    setDepositScreenshotFile(null);
   };
 
   return (
@@ -109,8 +114,8 @@ const HomePageContent = () => {
             <CardHeader>
               <CardTitle className="text-3xl font-headline text-accent text-center">Depositar Saldo</CardTitle>
               <CardDescription className="text-center text-muted-foreground mt-2">
-                Para depositar, realiza una transferencia Nequi a la cuenta <strong className="text-primary">3XX-XXX-XXXX</strong>.
-                Luego, ingresa el monto exacto transferido y confirma.
+                Realiza una transferencia Nequi a la cuenta <strong className="text-primary">3XX-XXX-XXXX</strong>.
+                Luego, ingresa el monto y adjunta el comprobante.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -125,8 +130,21 @@ const HomePageContent = () => {
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
                   className="text-lg py-3 h-12 border-2 focus:border-primary"
-                  min="1000" // Ejemplo de monto mínimo
+                  min="1000"
                 />
+              </div>
+              <div>
+                <Label htmlFor="depositScreenshot" className="text-lg text-foreground mb-2 block flex items-center">
+                  <UploadCloud className="mr-2 h-5 w-5 text-primary" /> Adjuntar Comprobante Nequi
+                </Label>
+                <Input 
+                  id="depositScreenshot" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => setDepositScreenshotFile(e.target.files ? e.target.files[0] : null)}
+                  className="text-base file:bg-primary file:text-primary-foreground hover:file:bg-primary-dark file:rounded-md file:border-0 file:px-4 file:py-2 file:mr-3 file:font-semibold"
+                />
+                {depositScreenshotFile && <p className="text-sm text-muted-foreground mt-2">Seleccionado: {depositScreenshotFile.name}</p>}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
@@ -136,6 +154,7 @@ const HomePageContent = () => {
                 className="w-full sm:w-auto"
                 size="medium"
                 iconLeft={<Coins className="h-5 w-5" />}
+                disabled={!depositAmount || parseFloat(depositAmount) <=0 || !depositScreenshotFile}
               >
                 Confirmar Depósito
               </CartoonButton>
@@ -155,3 +174,4 @@ export default function HomePage() {
     </AppLayout>
   );
 }
+
