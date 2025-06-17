@@ -38,6 +38,12 @@ const ProfilePageContent = () => {
         toast({ title: "Error", description: "El formato del link de amigo de Clash Royale es inválido.", variant: "destructive"});
         return;
       }
+      
+      if (formData.nequiAccount && !/^\d{7,}$/.test(formData.nequiAccount)) {
+        toast({ title: "Error", description: "El número de teléfono Nequi debe tener al menos 7 dígitos y solo contener números.", variant: "destructive"});
+        return;
+      }
+
 
       if (formData.clashTag && formData.nequiAccount) {
         updateUser({ 
@@ -49,30 +55,35 @@ const ProfilePageContent = () => {
         toast({ title: "¡Perfil Actualizado!", description: "Tus cambios han sido guardados.", variant: "default" });
       } else {
         toast({ title: "Error", description: "Los campos de Tag y Número de teléfono Nequi no pueden estar vacíos.", variant: "destructive"});
+        // Reset form to current user data if save fails due to empty required fields
         setFormData({ clashTag: user.clashTag, nequiAccount: user.nequiAccount, avatarUrl: user.avatarUrl, friendLink: user.friendLink });
       }
     } else {
+      // When entering edit mode, populate form with current user data
       setFormData({ clashTag: user.clashTag, nequiAccount: user.nequiAccount, avatarUrl: user.avatarUrl, friendLink: user.friendLink || '' });
     }
     setIsEditing(!isEditing);
   };
 
-  const InfoRow = ({ icon, label, value, name, editingValue, onChange, isEditing, type = "text", placeholder }: { icon: React.ReactNode, label: string, value: string, name?: string, editingValue?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, isEditing?: boolean, type?: string, placeholder?: string }) => (
-    <div className="flex items-center space-x-4 py-3 border-b border-border last:border-b-0">
-      <div className="flex-shrink-0 w-8 h-8 text-primary flex items-center justify-center">{icon}</div>
+  const InfoRow = ({ icon, label, value, name, editingValue, onChange, isEditing, type = "text", placeholder, description }: { icon: React.ReactNode, label: string, value: string, name?: string, editingValue?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void, isEditing?: boolean, type?: string, placeholder?: string, description?: string }) => (
+    <div className="flex items-start space-x-4 py-3 border-b border-border last:border-b-0">
+      <div className="flex-shrink-0 w-8 h-8 text-primary flex items-center justify-center pt-1">{icon}</div>
       <div className="flex-grow">
         <p className="text-sm text-muted-foreground">{label}</p>
         {isEditing && name && onChange ? (
-          <Input 
-            type={type}
-            name={name}
-            value={editingValue} 
-            onChange={onChange} 
-            placeholder={placeholder}
-            className="text-lg font-semibold border-2 focus:border-accent py-2" 
-          />
+          <>
+            <Input 
+              type={type}
+              name={name}
+              value={editingValue} 
+              onChange={onChange} 
+              placeholder={placeholder}
+              className="text-lg font-semibold border-2 focus:border-accent py-2 mt-1" 
+            />
+            {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+          </>
         ) : (
-          <p className="text-lg font-semibold text-foreground break-all">{value || "-"}</p>
+          <p className="text-lg font-semibold text-foreground break-all mt-0.5">{value || "-"}</p>
         )}
       </div>
     </div>
@@ -109,10 +120,39 @@ const ProfilePageContent = () => {
           <CardDescription className="text-muted-foreground mt-1 text-lg">Administra tu identidad en CR Duels.</CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-2">
-          <InfoRow icon={<ClashTagIcon />} label="Tag de Clash Royale" value={user.clashTag} name="clashTag" editingValue={formData.clashTag} onChange={handleInputChange} isEditing={isEditing} />
-          <InfoRow icon={<NequiIcon />} label="Número de teléfono enlazado con Nequi" value={user.nequiAccount} name="nequiAccount" editingValue={formData.nequiAccount} onChange={handleInputChange} isEditing={isEditing} placeholder="Número de teléfono de tu cuenta Nequi"/>
-          <InfoRow icon={<LinkIcon />} label="Link de Amigo Clash Royale" value={user.friendLink || "No establecido"} name="friendLink" editingValue={formData.friendLink} onChange={handleInputChange} isEditing={isEditing} placeholder="https://link.clashroyale.com/..." />
-          <InfoRow icon={<PhoneIcon />} label="Teléfono Registrado" value={user.phone} />
+          <InfoRow icon={<PhoneIcon />} label="Teléfono Registrado (Principal)" value={user.phone} />
+          <InfoRow 
+            icon={<NequiIcon />} 
+            label="Número de teléfono enlazado con Nequi" 
+            value={user.nequiAccount} 
+            name="nequiAccount" 
+            editingValue={formData.nequiAccount} 
+            onChange={handleInputChange} 
+            isEditing={isEditing} 
+            placeholder="Tu número de Nequi"
+            description="Este es el número donde recibirás/enviarás pagos."
+          />
+          <InfoRow 
+            icon={<ClashTagIcon />} 
+            label="Tag de Clash Royale" 
+            value={user.clashTag} 
+            name="clashTag" 
+            editingValue={formData.clashTag} 
+            onChange={handleInputChange} 
+            isEditing={isEditing} 
+            placeholder="Tu Tag de jugador"
+          />
+          <InfoRow 
+            icon={<LinkIcon />} 
+            label="Link de Amigo Clash Royale" 
+            value={user.friendLink || "No establecido"} 
+            name="friendLink" 
+            editingValue={formData.friendLink} 
+            onChange={handleInputChange} 
+            isEditing={isEditing} 
+            placeholder="https://link.clashroyale.com/..."
+            description="Necesario para invitar a duelos." 
+          />
           <div className="flex items-center space-x-4 py-3">
              <div className="flex-shrink-0 w-8 h-8 text-primary flex items-center justify-center">💰</div>
              <div className="flex-grow">

@@ -56,7 +56,7 @@ export default function LoginPage() {
             id: 'user-123-demo',
             phone: data.phone,
             clashTag: 'Player#ABC',
-            nequiAccount: '3001112233',
+            nequiAccount: '3001112233', // Specific Nequi for demo user
             avatarUrl: 'https://placehold.co/100x100.png?text=P',
             balance: 50000,
             friendLink: 'https://link.clashroyale.com/invite/friend/es?tag=DEMOTAG&token=demotoken&platform=android',
@@ -66,7 +66,7 @@ export default function LoginPage() {
             id: `user-${Date.now()}`,
             phone: data.phone,
             clashTag: 'NewUser#TAG',
-            nequiAccount: '300XXXXXXX',
+            nequiAccount: data.phone, // Nequi number defaults to main phone
             avatarUrl: `https://placehold.co/100x100.png?text=${data.phone[0]}`,
             balance: 10000, // Starting balance
             friendLink: undefined, // New users would set this on registration

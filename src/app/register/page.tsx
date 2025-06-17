@@ -14,7 +14,7 @@ import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { CrownIcon, NequiIcon, PhoneIcon, RegisterIcon, ShieldIcon } from '@/components/icons/ClashRoyaleIcons';
+import { CrownIcon, PhoneIcon, RegisterIcon, ShieldIcon } from '@/components/icons/ClashRoyaleIcons';
 import { LinkIcon as LucideLinkIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
@@ -22,7 +22,6 @@ import type { User } from '@/types';
 const registerSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. #XXXXXXXX)"),
-  nequiAccount: z.string().min(7, "El número de teléfono Nequi debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono Nequi solo debe contener dígitos"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
     .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=[0289PYLQGRJCUV]{3,}&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido. Ejemplo: https://link.clashroyale.com/invite/friend/es?tag=TAG&token=token&platform=android" }),
@@ -41,7 +40,6 @@ export default function RegisterPage() {
     defaultValues: {
       phone: '',
       clashTag: '',
-      nequiAccount: '',
       friendLink: '',
     },
   });
@@ -61,7 +59,7 @@ export default function RegisterPage() {
       id: `user-${Date.now()}`,
       phone: data.phone,
       clashTag: data.clashTag.toUpperCase().startsWith('#') ? data.clashTag.toUpperCase() : `#${data.clashTag.toUpperCase()}`,
-      nequiAccount: data.nequiAccount,
+      nequiAccount: data.phone, // Use main phone number as Nequi account by default
       friendLink: data.friendLink,
       avatarUrl: `https://placehold.co/100x100.png?text=${data.clashTag[0]?.toUpperCase() || 'R'}`,
       balance: 0, 
@@ -95,11 +93,12 @@ export default function RegisterPage() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg text-foreground flex items-center"><PhoneIcon className="mr-2 h-5 w-5 text-primary" />Número de Teléfono</FormLabel>
+                    <FormLabel className="text-lg text-foreground flex items-center"><PhoneIcon className="mr-2 h-5 w-5 text-primary" />Número de Teléfono Principal</FormLabel>
                     <FormControl>
                       <Input type="tel" placeholder="ej. 3001234567" {...field} className="text-lg py-6 border-2 focus:border-primary" />
                     </FormControl>
                     <FormMessage />
+                    <p className="text-xs text-muted-foreground mt-1">Este será tu número de contacto y, por defecto, tu número de Nequi.</p>
                   </FormItem>
                 )}
               />
@@ -111,19 +110,6 @@ export default function RegisterPage() {
                     <FormLabel className="text-lg text-foreground flex items-center"><ShieldIcon className="mr-2 h-5 w-5 text-primary" />Tag de Clash Royale</FormLabel>
                     <FormControl>
                       <Input placeholder="ej. #P01Y2G3R" {...field} className="text-lg py-6 border-2 focus:border-primary" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="nequiAccount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-lg text-foreground flex items-center"><NequiIcon className="mr-2 h-5 w-5 text-primary" />Número de teléfono enlazado con Nequi</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="Número de teléfono de tu cuenta Nequi" {...field} className="text-lg py-6 border-2 focus:border-primary" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
