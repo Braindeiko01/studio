@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, FormEvent, useRef } from 'react';
@@ -8,33 +9,36 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Link as LinkIcon, CheckCircle, XCircle, UploadCloud, SwordsIcon, UserCircle, MessageSquare } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Send, Link as LinkIconLucide, CheckCircle, XCircle, UploadCloud } from 'lucide-react'; // Renamed LinkIcon to avoid conflict
+import { useToast } from "@/hooks/use-toast";
 import type { ChatMessage, User, Bet } from '@/types';
 import { getLocalStorageItem, setLocalStorageItem } from '@/lib/storage';
+import { useRouter } from 'next/navigation';
+import { Label } from '@/components/ui/label';
 
-const CHAT_MESSAGES_STORAGE_KEY_PREFIX = 'royaleDuelChatMessages_';
-const BET_HISTORY_STORAGE_KEY = 'royaleDuelBetHistory';
+
+const CHAT_MESSAGES_STORAGE_KEY_PREFIX = 'crDuelsChatMessages_'; // Updated prefix
+const BET_HISTORY_STORAGE_KEY = 'crDuelsBetHistory'; // Updated prefix
 
 
 const ChatPageContent = () => {
   const { user } = useAuth();
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter(); // Import useRouter from 'next/navigation'
+  const routerNav = useRouter(); 
 
   const matchId = params.matchId as string;
-  const opponentTag = searchParams.get('opponentTag') || 'Opponent';
+  const opponentTag = searchParams.get('opponentTag') || 'Oponente';
   const opponentAvatar = searchParams.get('opponentAvatar') || `https://placehold.co/40x40.png?text=${opponentTag[0] || 'O'}`;
   
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isSubmittingResult, setIsSubmittingResult] = useState(false); // To show result submission UI
+  const [isSubmittingResult, setIsSubmittingResult] = useState(false);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [resultSubmitted, setResultSubmitted] = useState(false); // Track if current user submitted
+  const [resultSubmitted, setResultSubmitted] = useState(false); 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -46,17 +50,15 @@ const ChatPageContent = () => {
 
   useEffect(() => {
     if (!user || !matchId) return;
-    // Load messages from localStorage
     const storedMessages = getLocalStorageItem<ChatMessage[]>(`${CHAT_MESSAGES_STORAGE_KEY_PREFIX}${matchId}`);
     if (storedMessages) {
       setMessages(storedMessages);
     } else {
-      // Add initial system message
       const initialMessage: ChatMessage = {
         id: `sys-${Date.now()}`,
         matchId,
         senderId: 'system',
-        text: `Chat started for match with ${opponentTag}. Share your Clash Royale friend links to begin!`,
+        text: `Chat iniciado para el duelo con ${opponentTag}. ¡Compartan sus links de amigo de Clash Royale para comenzar!`,
         timestamp: new Date().toISOString(),
         isSystemMessage: true,
       };
@@ -88,28 +90,29 @@ const ChatPageContent = () => {
   
   const handleShareFriendLink = () => {
     if (!user) return;
-    const friendLink = `Player ${user.clashTag} shared friend link: [ClashRoyaleFriendLinkPlaceholder]`; // Placeholder
+    const linkToShare = user.friendLink || "[Link no proporcionado por el usuario]";
+    const friendLinkMessage = `${user.clashTag} compartió su link de amigo: ${linkToShare}`;
+    
     const message: ChatMessage = {
-      id: `sys-${user.id}-${Date.now()}`,
+      id: `sys-link-${user.id}-${Date.now()}`,
       matchId,
       senderId: 'system',
-      text: friendLink,
+      text: friendLinkMessage,
       timestamp: new Date().toISOString(),
       isSystemMessage: true,
     };
     const updatedMessages = [...messages, message];
     setMessages(updatedMessages);
     saveMessages(updatedMessages);
-    toast({ title: "Friend Link Shared", description: "Your (mock) friend link has been posted in chat." });
+    toast({ title: "Link de Amigo Compartido", description: `Tu link de amigo ${user.friendLink ? '' : '(o un aviso de que no lo tienes) '}ha sido publicado en el chat.` });
   };
 
   const handleResultSubmission = (result: 'win' | 'loss') => {
     if (!user || resultSubmitted) return;
 
-    // Simulate result submission
     toast({
-      title: "Result Submitted!",
-      description: `You reported a ${result}. Waiting for opponent if needed, or admin verification.`,
+      title: "¡Resultado Enviado!",
+      description: `Reportaste una ${result === 'win' ? 'victoria' : 'derrota'}. Esperando al oponente si es necesario, o verificación del administrador.`,
       variant: "default",
     });
     
@@ -117,49 +120,38 @@ const ChatPageContent = () => {
       id: `bet-${matchId}-${user.id}`,
       userId: user.id,
       matchId,
-      amount: 6000, // Fixed amount
+      amount: 6000, 
       result: result,
       opponentTag: opponentTag,
       matchDate: new Date().toISOString(),
     };
 
-    // Update user balance (mock)
-    const balanceChange = result === 'win' ? 6000 : -6000;
-    // In a real app, updateUser would call an API. Here it's local.
-    // This local updateUser won't persist across sessions without further logic.
-    // Let's assume useAuth().updateUser can handle this:
-    // useAuth().updateUser({ balance: user.balance + balanceChange });
-
-    // Add to bet history in localStorage
     const historyKey = `${BET_HISTORY_STORAGE_KEY}_${user.id}`;
     const currentHistory = getLocalStorageItem<Bet[]>(historyKey) || [];
     setLocalStorageItem(historyKey, [...currentHistory, betResult]);
     
     setResultSubmitted(true);
-    setIsSubmittingResult(false); // Close submission UI
+    setIsSubmittingResult(false); 
     
-    // Add a system message about result submission
-     const resultMessage: ChatMessage = {
+     const resultMessageText = `${user.clashTag} envió el resultado del duelo como ${result === 'win' ? 'VICTORIA' : 'DERROTA'}. ${screenshotFile ? 'Captura de pantalla proporcionada.' : 'No se proporcionó captura.'}`;
+     const resultSystemMessage: ChatMessage = {
       id: `sys-result-${user.id}-${Date.now()}`,
       matchId,
       senderId: 'system',
-      text: `${user.clashTag} submitted the match result as a ${result}. ${screenshotFile ? 'Screenshot provided.' : 'No screenshot provided.'}`,
+      text: resultMessageText,
       timestamp: new Date().toISOString(),
       isSystemMessage: true,
     };
-    const updatedMessages = [...messages, resultMessage];
+    const updatedMessages = [...messages, resultSystemMessage];
     setMessages(updatedMessages);
     saveMessages(updatedMessages);
-
-    // Potentially navigate away or show a summary
-    // router.push('/history'); // Option
   };
 
 
-  if (!user) return <p>Loading chat...</p>;
+  if (!user) return <p>Cargando chat...</p>;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)]"> {/* Adjusted height for AppLayout */}
+    <div className="flex flex-col h-[calc(100vh-150px)] md:h-[calc(100vh-180px)]">
       <Card className="flex-grow flex flex-col shadow-card-medieval border-2 border-primary-dark overflow-hidden">
         <CardHeader className="bg-primary/10 p-4 flex flex-row items-center justify-between border-b border-border">
           <div className="flex items-center space-x-3">
@@ -170,7 +162,7 @@ const ChatPageContent = () => {
             <CardTitle className="text-2xl font-headline text-primary">{opponentTag}</CardTitle>
           </div>
           <CartoonButton size="small" variant="destructive" onClick={() => setIsSubmittingResult(true)} disabled={resultSubmitted}>
-            {resultSubmitted ? 'Result Sent' : 'Submit Result'}
+            {resultSubmitted ? 'Resultado Enviado' : 'Enviar Resultado'}
           </CartoonButton>
         </CardHeader>
 
@@ -178,12 +170,12 @@ const ChatPageContent = () => {
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.senderId === user.id ? 'justify-end' : msg.senderId === 'system' ? 'justify-center' : 'justify-start'}`}>
               {msg.isSystemMessage ? (
-                <div className="text-xs text-center text-muted-foreground italic bg-muted p-2 rounded-lg shadow-sm max-w-md my-1">
+                <div className="text-xs text-center text-muted-foreground italic bg-muted p-2 rounded-lg shadow-sm max-w-md my-1 break-words">
                   {msg.text}
                 </div>
               ) : (
                 <div className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-md ${msg.senderId === user.id ? 'bg-primary text-primary-foreground rounded-br-none ml-auto' : 'bg-card text-card-foreground rounded-bl-none mr-auto'}`}>
-                  <p className="text-base">{msg.text}</p>
+                  <p className="text-base break-words">{msg.text}</p>
                   <p className={`text-xs mt-1 ${msg.senderId === user.id ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground/70 text-left'}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -196,18 +188,18 @@ const ChatPageContent = () => {
 
         <div className="border-t border-border p-4 bg-card">
           <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-            <Button type="button" variant="ghost" size="icon" onClick={handleShareFriendLink} aria-label="Share Friend Link">
-              <LinkIcon className="h-6 w-6 text-primary hover:text-accent" />
+            <Button type="button" variant="ghost" size="icon" onClick={handleShareFriendLink} aria-label="Compartir Link de Amigo">
+              <LinkIconLucide className="h-6 w-6 text-primary hover:text-accent" />
             </Button>
             <Input
               type="text"
-              placeholder="Type your message..."
+              placeholder="Escribe tu mensaje..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               className="flex-grow text-lg py-3 h-12 border-2 focus:border-primary"
-              aria-label="Chat message input"
+              aria-label="Entrada de mensaje de chat"
             />
-            <CartoonButton type="submit" size="small" className="px-5 py-3" aria-label="Send Message">
+            <CartoonButton type="submit" size="small" className="px-5 py-3" aria-label="Enviar Mensaje">
               <Send className="h-5 w-5" />
             </CartoonButton>
           </form>
@@ -218,13 +210,13 @@ const ChatPageContent = () => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in-up">
           <Card className="w-full max-w-lg shadow-xl border-2 border-accent">
             <CardHeader>
-              <CardTitle className="text-3xl font-headline text-accent text-center">Submit Match Result</CardTitle>
-              <CardDescription className="text-center text-muted-foreground">Declare the outcome of your duel with {opponentTag}.</CardDescription>
+              <CardTitle className="text-3xl font-headline text-accent text-center">Enviar Resultado del Duelo</CardTitle>
+              <CardDescription className="text-center text-muted-foreground">Declara el resultado de tu duelo con {opponentTag}.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
                 <Label htmlFor="screenshot" className="text-lg text-foreground mb-2 block flex items-center">
-                  <UploadCloud className="mr-2 h-5 w-5 text-primary" /> Upload Screenshot (Optional)
+                  <UploadCloud className="mr-2 h-5 w-5 text-primary" /> Subir Captura (Opcional)
                 </Label>
                 <Input 
                   id="screenshot" 
@@ -233,7 +225,7 @@ const ChatPageContent = () => {
                   onChange={(e) => setScreenshotFile(e.target.files ? e.target.files[0] : null)}
                   className="text-base file:bg-primary file:text-primary-foreground hover:file:bg-primary-dark file:rounded-md file:border-0 file:px-4 file:py-2 file:mr-3 file:font-semibold"
                 />
-                {screenshotFile && <p className="text-sm text-muted-foreground mt-2">Selected: {screenshotFile.name}</p>}
+                {screenshotFile && <p className="text-sm text-muted-foreground mt-2">Seleccionado: {screenshotFile.name}</p>}
               </div>
               <div className="flex justify-around space-x-4">
                 <CartoonButton 
@@ -242,7 +234,7 @@ const ChatPageContent = () => {
                   className="flex-1 bg-green-500 hover:bg-green-600 border-green-700 text-white"
                   iconLeft={<CheckCircle />}
                 >
-                  I Won
+                  Gané
                 </CartoonButton>
                 <CartoonButton 
                   variant="destructive" 
@@ -250,12 +242,12 @@ const ChatPageContent = () => {
                   className="flex-1"
                   iconLeft={<XCircle />}
                 >
-                  I Lost
+                  Perdí
                 </CartoonButton>
               </div>
             </CardContent>
             <CardFooter>
-                <Button variant="outline" onClick={() => setIsSubmittingResult(false)} className="w-full text-lg py-3">Cancel</Button>
+                <Button variant="outline" onClick={() => setIsSubmittingResult(false)} className="w-full text-lg py-3">Cancelar</Button>
             </CardFooter>
           </Card>
         </div>
@@ -264,8 +256,6 @@ const ChatPageContent = () => {
   );
 };
 
-// Need to import useRouter
-import { useRouter } from 'next/navigation';
 
 export default function ChatPage() {
   return (

@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   phone: string;
@@ -5,6 +6,7 @@ export interface User {
   nequiAccount: string;
   avatarUrl?: string; // URL to placeholder or actual avatar
   balance: number; // in COP
+  friendLink?: string; // Clash Royale friend invitation link
 }
 
 export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';

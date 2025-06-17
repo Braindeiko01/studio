@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
 
 const loginSchema = z.object({
-  phone: z.string().min(7, "Phone number must be at least 7 digits").regex(/^\d+$/, "Phone number must contain only digits"),
+  phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -59,6 +59,7 @@ export default function LoginPage() {
             nequiAccount: '3001112233',
             avatarUrl: 'https://placehold.co/100x100.png?text=P',
             balance: 50000,
+            friendLink: 'https://link.clashroyale.com/invite/friend/es?tag=DEMOTAG&token=demotoken&platform=android',
         };
     } else { // Simulate a new user being "found" or a generic user for other numbers
         mockUser = {
@@ -68,13 +69,14 @@ export default function LoginPage() {
             nequiAccount: '300XXXXXXX',
             avatarUrl: `https://placehold.co/100x100.png?text=${data.phone[0]}`,
             balance: 10000, // Starting balance
+            friendLink: undefined, // New users would set this on registration
         };
     }
     
     login(mockUser);
     toast({
-      title: "Login Successful!",
-      description: `Welcome back, ${mockUser.clashTag}!`,
+      title: "¡Inicio de Sesión Exitoso!",
+      description: `¡Bienvenido de nuevo, ${mockUser.clashTag}!`,
       variant: "default",
     });
     router.push('/');
@@ -88,7 +90,7 @@ export default function LoginPage() {
           <CrownIcon className="mx-auto h-16 w-16 text-primary mb-4" />
           <CardTitle className="text-4xl font-headline text-primary">CR Duels</CardTitle>
           <CardDescription className="text-muted-foreground text-base">
-            Enter your phone number to join the battle!
+            Ingresa tu número de teléfono para unirte a la batalla!
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -100,15 +102,15 @@ export default function LoginPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-lg text-foreground flex items-center">
-                      <PhoneIcon className="mr-2 h-5 w-5 text-primary" /> Phone Number
+                      <PhoneIcon className="mr-2 h-5 w-5 text-primary" /> Número de Teléfono
                     </FormLabel>
                     <FormControl>
                       <Input 
                         type="tel" 
-                        placeholder="e.g., 3001234567" 
+                        placeholder="ej. 3001234567" 
                         {...field}
                         className="text-lg py-6 border-2 focus:border-primary"
-                        aria-label="Phone Number"
+                        aria-label="Número de Teléfono"
                       />
                     </FormControl>
                     <FormMessage />
@@ -116,17 +118,17 @@ export default function LoginPage() {
                 )}
               />
               <CartoonButton type="submit" className="w-full" disabled={isLoading} iconLeft={<LoginIcon />}>
-                {isLoading ? 'Logging In...' : 'Log In'}
+                {isLoading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
               </CartoonButton>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?
+            ¿No tienes una cuenta?
           </p>
           <Button variant="link" asChild className="text-primary hover:text-accent font-semibold text-lg">
-            <Link href="/register">Create Account</Link>
+            <Link href="/register">Crear Cuenta</Link>
           </Button>
         </CardFooter>
       </Card>
