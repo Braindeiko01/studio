@@ -93,12 +93,12 @@ export default function RegisterPage() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg text-foreground flex items-center"><PhoneIcon className="mr-2 h-5 w-5 text-primary" />Número de Teléfono Principal</FormLabel>
+                    <FormLabel className="text-lg text-foreground flex items-center"><PhoneIcon className="mr-2 h-5 w-5 text-primary" />Número de teléfono - Nequi</FormLabel>
                     <FormControl>
                       <Input type="tel" placeholder="ej. 3001234567" {...field} className="text-lg py-6 border-2 focus:border-primary" />
                     </FormControl>
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground mt-1">Este será tu número de contacto y, por defecto, tu número de Nequi.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Este número se usará para tu cuenta y para transacciones Nequi.</p>
                   </FormItem>
                 )}
               />
