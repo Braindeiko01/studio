@@ -34,7 +34,7 @@ const HomePageContent = () => {
 
   const handleOpenDepositModal = () => {
     setIsDepositModalOpen(true);
-    setDepositAmount('6000'); // Default to minimum amount
+    setDepositAmount('6000'); 
     setDepositScreenshotFile(null);
   };
 
@@ -76,10 +76,6 @@ const HomePageContent = () => {
       });
       return;
     }
-
-    // Simulate balance update. In a real app, this would happen after admin verification.
-    // For now, we'll update it directly for demonstration.
-    // depositBalance(amount); // This would be called after verification in a real scenario
 
     toast({
       title: "¡Solicitud de Depósito Recibida!",
@@ -142,7 +138,7 @@ const HomePageContent = () => {
               <CardTitle className="text-3xl font-headline text-accent text-center">Depositar Saldo</CardTitle>
               <CardDescription className="text-center text-muted-foreground mt-2">
                 Realiza una transferencia Nequi a la cuenta <strong className="text-primary">305-288-1517</strong>.
-                El monto mínimo de depósito es <strong className="text-primary">6,000 COP</strong> y debe ser en múltiplos de 6,000 COP (ej. 6.000, 12.000, 18.000, etc.).
+                El monto del depósito debe ser en múltiplos de <strong className="text-primary">6,000 COP</strong> (ej. 6.000, 12.000, etc.), con un mínimo de 6,000 COP.
                 Luego, ingresa el monto exacto y adjunta el comprobante.
               </CardDescription>
             </CardHeader>
@@ -177,11 +173,11 @@ const HomePageContent = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-4">
-              <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto text-lg py-3">Cancelar</Button>
+              <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto text-lg py-3" size="sm">Cancelar</Button>
               <CartoonButton 
                 onClick={handleDepositConfirm} 
                 className="w-full sm:w-auto"
-                size="medium"
+                size="small"
                 iconLeft={<Coins className="h-5 w-5" />}
                 disabled={!depositAmount || parseFloat(depositAmount) < 6000 || parseFloat(depositAmount) % 6000 !== 0 || !depositScreenshotFile}
               >
@@ -203,4 +199,3 @@ export default function HomePage() {
     </AppLayout>
   );
 }
-
