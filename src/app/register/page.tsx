@@ -14,7 +14,7 @@ import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { CrownIcon, PhoneIcon, RegisterIcon, ShieldIcon, UserIcon as AppUserIcon } from '@/components/icons/ClashRoyaleIcons'; // Renamed UserIcon to AppUserIcon
+import { CrownIcon, PhoneIcon, RegisterIcon, UserIcon as AppUserIcon } from '@/components/icons/ClashRoyaleIcons'; // Renamed UserIcon to AppUserIcon
 import { LinkIcon as LucideLinkIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
@@ -146,23 +146,11 @@ export default function RegisterPage() {
                       <Input placeholder="https://link.clashroyale.com/..." {...field} className="text-lg py-6 border-2 focus:border-primary" />
                     </FormControl>
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground mt-1">Puedes encontrarlo en Clash Royale: Social &gt; Amigos &gt; Invitar amigo.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Puedes encontrarlo en Clash Royale: Social &gt; Amigos &gt; Invitar amigo. Tu Tag de jugador se extraerá automáticamente.</p>
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="clashTag"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-lg text-foreground flex items-center"><ShieldIcon className="mr-2 h-5 w-5 text-primary" />Tag de Clash Royale</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ej. P01Y2G3R (se autocompleta desde el link)" {...field} className="text-lg py-6 border-2 focus:border-primary" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* El campo de ClashTag se elimina de la vista, pero su valor se sigue manejando programáticamente */}
               <CartoonButton type="submit" variant="accent" className="w-full mt-6" disabled={isLoading} iconLeft={<RegisterIcon />}>
                 {isLoading ? 'Registrando...' : 'Registrarse y Jugar'}
               </CartoonButton>
