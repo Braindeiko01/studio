@@ -18,20 +18,21 @@ import { CrownIcon, LoginIcon, PhoneIcon } from '@/components/icons/ClashRoyaleI
 import { LockKeyholeIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
-import { getLocalStorageItem } from '@/lib/storage'; // Import getLocalStorageItem
+import { getLocalStorageItem } from '@/lib/storage';
+import { loginUserAction } from '@/lib/actions';
 
-const AUTH_STORAGE_KEY = 'crDuelsUser'; // Key where the registered user is stored
+const AUTH_STORAGE_KEY = 'crDuelsUser';
 
 const loginSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
-  password: z.string().min(1, "La contraseña es requerida"), // Can be min 1 if demo password is short
+  password: z.string().min(1, "La contraseña es requerida"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuth();
+  const auth = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,73 +45,42 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (auth.isAuthenticated) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [auth.isAuthenticated, router]);
 
   const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    let userToLogin: User | null = null;
-
-    if (data.phone === "0000000") {
-      if (data.password === "0000") { // Demo user password
-        userToLogin = {
-            id: 'user-123-demo',
-            phone: data.phone,
-            password: data.password,
-            username: 'DemoUser',
-            clashTag: 'Player#ABC',
-            nequiAccount: '3001112233',
-            avatarUrl: 'https://placehold.co/100x100.png?text=P',
-            balance: 50000,
-            friendLink: 'https://link.clashroyale.com/invite/friend/es?tag=DEMOTAG&token=demotoken&platform=android',
-        };
-      } else {
-        toast({
-          title: "Error de Inicio de Sesión",
-          description: "Contraseña incorrecta para el usuario Demo.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-    } else {
-      const storedUser = getLocalStorageItem<User>(AUTH_STORAGE_KEY);
-      if (storedUser && storedUser.phone === data.phone && storedUser.password === data.password) {
-        userToLogin = storedUser;
-      } else if (storedUser && storedUser.phone === data.phone && storedUser.password !== data.password) {
-        toast({
-          title: "Error de Inicio de Sesión",
-          description: "Contraseña incorrecta.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      } else {
-         toast({
-          title: "Error de Inicio de Sesión",
-          description: "Usuario no encontrado o credenciales incorrectas. Por favor, regístrate si eres nuevo.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-    }
     
-    if (userToLogin) {
-      login(userToLogin);
+    // Para la simulación, el cliente aún lee de su localStorage para pasarlo al Server Action.
+    // En un sistema real con DB, el Server Action consultaría la DB directamente.
+    const clientStoredUser = getLocalStorageItem<User>(AUTH_STORAGE_KEY);
+    let userForAction: User | undefined = undefined;
+
+    // Solo pasamos el clientStoredUser si el teléfono coincide con el que se intenta loguear
+    // y no es el usuario demo (ya que el Server Action maneja el demo internamente).
+    if (clientStoredUser && clientStoredUser.phone === data.phone && data.phone !== "0000000") {
+        userForAction = clientStoredUser;
+    }
+
+    const result = await loginUserAction(data, userForAction);
+
+    if (result.user) {
+      auth.login(result.user); // AuthContext actualiza el estado del cliente y localStorage
       toast({
         title: "¡Inicio de Sesión Exitoso!",
-        description: `¡Bienvenido de nuevo, ${userToLogin.username}!`,
+        description: `¡Bienvenido de nuevo, ${result.user.username}!`,
         variant: "default",
       });
       router.push('/');
+    } else if (result.error) {
+      toast({
+        title: "Error de Inicio de Sesión",
+        description: result.error,
+        variant: "destructive",
+      });
     }
-    // If userToLogin is still null here, it means an error was already handled or should have been.
-    // This path should ideally not be reached if an error occurred.
     setIsLoading(false);
   };
 

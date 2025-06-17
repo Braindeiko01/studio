@@ -14,10 +14,11 @@ import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { CrownIcon, PhoneIcon, RegisterIcon, UserIcon as AppUserIcon } from '@/components/icons/ClashRoyaleIcons'; // Renamed UserIcon to AppUserIcon
+import { CrownIcon, PhoneIcon, RegisterIcon, UserIcon as AppUserIcon } from '@/components/icons/ClashRoyaleIcons';
 import { LinkIcon as LucideLinkIcon, LockKeyholeIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@/types';
+import { registerUserAction } from '@/lib/actions';
 
 const registerSchema = z.object({
   username: z.string()
@@ -26,17 +27,17 @@ const registerSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Nombre de usuario inválido. Solo letras, números y guiones bajos (_)."),
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   password: z.string().min(4, "La contraseña debe tener al menos 4 caracteres"),
-  clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. P01Y2G3R)").optional(),
+  clashTag: z.string().min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres").regex(/^[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. P01Y2G3R)").optional().default(''),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
-    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=[0289PYLQGRJCUV]{3,}&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido. Ejemplo: https://link.clashroyale.com/invite/friend/es?tag=TAG&token=token&platform=android" }),
+    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=([0289PYLQGRJCUV]{3,})&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido. Ejemplo: https://link.clashroyale.com/invite/friend/es?tag=TAG&token=token&platform=android" }),
 });
 
-type RegisterFormValues = z.infer<typeof registerSchema>;
+export type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuth();
+  const auth = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -67,39 +68,48 @@ export default function RegisterPage() {
   }, [watchedFriendLink, form]);
 
  useEffect(() => {
-    if (isAuthenticated) {
+    if (auth.isAuthenticated) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [auth.isAuthenticated, router]);
 
   const onSubmit: SubmitHandler<RegisterFormValues> = async (data) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const clashTagValue = data.clashTag 
-      ? (data.clashTag.toUpperCase().startsWith('#') ? data.clashTag.toUpperCase() : `#${data.clashTag.toUpperCase()}`)
-      : '#DEFAULTTAG';
-
-
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      username: data.username,
-      phone: data.phone,
-      password: data.password,
-      clashTag: clashTagValue,
-      nequiAccount: data.phone,
-      friendLink: data.friendLink,
-      avatarUrl: `https://placehold.co/100x100.png?text=${data.username[0]?.toUpperCase() || 'R'}`,
-      balance: 0,
-    };
     
-    login(newUser); // The login function in AuthContext now stores the user object which includes the password
-    toast({
-      title: "¡Registro Exitoso!",
-      description: `¡Bienvenido a CR Duels, ${newUser.username}!`,
-      variant: "default",
-    });
-    router.push('/');
+    // Asegurarse que clashTag se extrae si está vacío pero el link es válido
+    let finalData = { ...data };
+    if (!finalData.clashTag && finalData.friendLink) {
+        const tagRegex = /tag=([0289PYLQGRJCUV]{3,})&/i;
+        const match = finalData.friendLink.match(tagRegex);
+        if (match && match[1]) {
+            finalData.clashTag = match[1].toUpperCase();
+        }
+    }
+    if (!finalData.clashTag) { // Si sigue sin clashTag (link inválido o no proveído)
+        // No es necesario un valor por defecto aquí si el Server Action lo maneja,
+        // pero es bueno asegurarse que el objeto que se envía es completo según el schema
+        // o que el schema permita opcionalidad y el backend la maneje.
+        // El schema ya tiene .optional().default('') para clashTag, así que está bien.
+    }
+
+
+    const result = await registerUserAction(finalData);
+
+    if (result.user) {
+      auth.login(result.user);
+      toast({
+        title: "¡Registro Exitoso!",
+        description: `¡Bienvenido a CR Duels, ${result.user.username}!`,
+        variant: "default",
+      });
+      router.push('/');
+    } else if (result.error) {
+      toast({
+        title: "Error de Registro",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
     setIsLoading(false);
   };
 
@@ -166,10 +176,11 @@ export default function RegisterPage() {
                       <Input placeholder="https://link.clashroyale.com/..." {...field} className="text-lg py-6 border-2 focus:border-primary" />
                     </FormControl>
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground mt-1">Puedes encontrarlo en Clash Royale: Social &gt; Amigos &gt; Invitar amigo. Tu Tag de jugador se extraerá automáticamente.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Puedes encontrarlo en Clash Royale: Social &gt; Amigos &gt; Invitar amigo. Tu Tag de jugador (#P01Y2G3R) se extraerá automáticamente.</p>
                   </FormItem>
                 )}
               />
+              {/* El campo ClashTag ya no es visible pero su valor se deriva del friendLink */}
               <CartoonButton type="submit" variant="accent" className="w-full mt-6" disabled={isLoading} iconLeft={<RegisterIcon />}>
                 {isLoading ? 'Registrando...' : 'Registrarse y Jugar'}
               </CartoonButton>
