@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -63,7 +64,7 @@ export default function RegisterPage() {
     login(newUser); // Log the user in immediately after registration
     toast({
       title: "Registration Successful!",
-      description: `Welcome to CR Duel, ${newUser.clashTag}!`,
+      description: `Welcome to CR Duels, ${newUser.clashTag}!`,
       variant: "default",
     });
     router.push('/'); // Redirect to home or dashboard
@@ -77,7 +78,7 @@ export default function RegisterPage() {
           <CrownIcon className="mx-auto h-16 w-16 text-accent mb-4" />
           <CardTitle className="text-4xl font-headline text-accent">Create Your Account</CardTitle>
           <CardDescription className="text-muted-foreground text-base">
-            Join CR Duel and start betting!
+            Join CR Duels and start betting!
           </CardDescription>
         </CardHeader>
         <CardContent>

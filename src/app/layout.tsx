@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'CR Duel - P2P Clash Royale Betting',
+  title: 'CR Duels - P2P Clash Royale Betting',
   description: 'Bet on your Clash Royale skills against other players!',
 };
 
