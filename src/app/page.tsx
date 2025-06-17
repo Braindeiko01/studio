@@ -63,7 +63,7 @@ const HomePageContent = () => {
     if (amount % 6000 !== 0) {
       toast({
         title: "Monto Inválido",
-        description: "El monto del depósito debe ser un múltiplo de 6,000 COP (ej. 6000, 12000, 18000).",
+        description: "El monto del depósito debe ser un múltiplo de 6,000 COP (ej. 6.000, 12.000, 18.000, etc.).",
         variant: "destructive",
       });
       return;
@@ -162,7 +162,7 @@ const HomePageContent = () => {
                   step="6000"
                 />
               </div>
-              <div>
+              <div className="mb-4"> {/* Added margin-bottom here */}
                 <Label htmlFor="depositScreenshot" className="text-lg text-foreground mb-2 block flex items-center">
                   <UploadCloud className="mr-2 h-5 w-5 text-primary" /> Adjuntar Comprobante Nequi
                 </Label>
