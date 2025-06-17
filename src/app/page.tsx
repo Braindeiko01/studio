@@ -138,7 +138,7 @@ const HomePageContent = () => {
               <CardTitle className="text-3xl font-headline text-accent text-center">Depositar Saldo</CardTitle>
               <CardDescription className="text-center text-muted-foreground mt-2">
                 Realiza una transferencia Nequi a la cuenta <strong className="text-primary">305-288-1517</strong>.
-                El monto del depósito debe ser en múltiplos de <strong className="text-primary">6,000 COP</strong> (ej. 6.000, 12.000, etc.), con un mínimo de 6,000 COP.
+                El monto del depósito debe ser en múltiplos de <strong className="text-primary">6,000 COP</strong> (ej. 6.000, 12.000, 18.000, etc.), con un mínimo de 6,000 COP.
                 Luego, ingresa el monto exacto y adjunta el comprobante.
               </CardDescription>
             </CardHeader>
@@ -158,7 +158,7 @@ const HomePageContent = () => {
                   step="6000"
                 />
               </div>
-              <div className="mb-4">
+              <div>
                 <Label htmlFor="depositScreenshot" className="text-lg text-foreground mb-2 block flex items-center">
                   <UploadCloud className="mr-2 h-5 w-5 text-primary" /> Adjuntar Comprobante Nequi
                 </Label>
@@ -172,8 +172,8 @@ const HomePageContent = () => {
                 {depositScreenshotFile && <p className="text-sm text-muted-foreground mt-2">Seleccionado: {depositScreenshotFile.name}</p>}
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-4">
-              <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto text-lg py-3" size="sm">Cancelar</Button>
+            <CardFooter className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
+              <Button variant="outline" onClick={handleCloseDepositModal} className="w-full sm:w-auto" size="sm">Cancelar</Button>
               <CartoonButton 
                 onClick={handleDepositConfirm} 
                 className="w-full sm:w-auto"
