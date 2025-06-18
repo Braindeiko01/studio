@@ -14,15 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Link as LinkIconLucide, CheckCircle, XCircle, UploadCloud } from 'lucide-react'; // Renamed LinkIcon to avoid conflict
 import { useToast } from "@/hooks/use-toast";
 import type { ChatMessage, User, Bet } from '@/types';
-// LocalStorage ya no se usará directamente para mensajes o historial de apuestas aquí
-// import { getLocalStorageItem, setLocalStorageItem } from '@/lib/storage';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
-
-
-// Las llaves de localStorage ya no son relevantes aquí si no se persiste globalmente en el cliente
-// const CHAT_MESSAGES_STORAGE_KEY_PREFIX = 'crDuelsChatMessages_';
-// const BET_HISTORY_STORAGE_KEY = 'crDuelsBetHistory';
 
 
 const ChatPageContent = () => {
@@ -52,14 +45,6 @@ const ChatPageContent = () => {
 
   useEffect(() => {
     if (!user || !matchId) return;
-    // Lógica de carga de mensajes:
-    // Con la eliminación de localStorage global, los mensajes de chat se perderían entre sesiones/recargas.
-    // Para simular, iniciaremos el chat siempre con un mensaje del sistema.
-    // En una app real, los mensajes se cargarían/guardarían en una BD a través de Server Actions o websockets.
-    // const storedMessages = getLocalStorageItem<ChatMessage[]>(`${CHAT_MESSAGES_STORAGE_KEY_PREFIX}${matchId}`);
-    // if (storedMessages) {
-    //   setMessages(storedMessages);
-    // } else {
       const initialMessage: ChatMessage = {
         id: `sys-${Date.now()}`,
         matchId,
@@ -69,16 +54,11 @@ const ChatPageContent = () => {
         isSystemMessage: true,
       };
       setMessages([initialMessage]);
-      // Ya no se guardan en localStorage global aquí.
-      // setLocalStorageItem(`${CHAT_MESSAGES_STORAGE_KEY_PREFIX}${matchId}`, [initialMessage]);
-    // }
   }, [user, matchId, opponentTag]);
 
   const saveMessages = (updatedMessages: ChatMessage[]) => {
-    // Esta función ya no guardaría en localStorage global.
-    // La persistencia de mensajes requeriría un backend.
-    // Por ahora, solo actualiza el estado local.
-    // setLocalStorageItem(`${CHAT_MESSAGES_STORAGE_KEY_PREFIX}${matchId}`, updatedMessages);
+    // En un sistema real, esto interactuaría con un backend para guardar mensajes.
+    // Para este prototipo, esta función es un marcador de posición.
   }
 
   const handleSendMessage = (e: FormEvent) => {
@@ -94,7 +74,7 @@ const ChatPageContent = () => {
     };
     const updatedMessages = [...messages, message];
     setMessages(updatedMessages);
-    saveMessages(updatedMessages); // Aún se llama, pero su efecto es local.
+    saveMessages(updatedMessages); 
     setNewMessage('');
   };
   
@@ -120,7 +100,7 @@ const ChatPageContent = () => {
     };
     const updatedMessages = [...messages, message];
     setMessages(updatedMessages);
-    saveMessages(updatedMessages); // Aún se llama, pero su efecto es local.
+    saveMessages(updatedMessages);
     toast({ title: "Link de Amigo Compartido", description: `Tu link de amigo ${user.friendLink ? '' : '(o un aviso de que no lo tienes) '}ha sido publicado en el chat.` });
   };
 
@@ -132,22 +112,6 @@ const ChatPageContent = () => {
       description: `Reportaste una ${result === 'win' ? 'victoria' : 'derrota'}. ${screenshotFile ? 'Comprobante adjuntado.' : 'Sin comprobante.'} Esperando al oponente si es necesario, o verificación del administrador.`,
       variant: "default",
     });
-    
-    // const betResult: Bet = {
-    //   id: `bet-${matchId}-${user.id}`,
-    //   userId: user.id,
-    //   matchId,
-    //   amount: 6000, 
-    //   result: result,
-    //   opponentTag: opponentTag,
-    //   matchDate: new Date().toISOString(),
-    // };
-
-    // La lógica de guardar el historial de apuestas ya no usa localStorage global.
-    // En un sistema real, esto se enviaría al servidor.
-    // const historyKey = `${BET_HISTORY_STORAGE_KEY}_${user.id}`;
-    // const currentHistory = getLocalStorageItem<Bet[]>(historyKey) || [];
-    // setLocalStorageItem(historyKey, [...currentHistory, betResult]);
     
     setResultSubmitted(true);
     setIsSubmittingResult(false); 
@@ -164,7 +128,7 @@ const ChatPageContent = () => {
     };
     const updatedMessages = [...messages, resultSystemMessage];
     setMessages(updatedMessages);
-    saveMessages(updatedMessages); // Aún se llama, pero su efecto es local.
+    saveMessages(updatedMessages);
   };
 
 

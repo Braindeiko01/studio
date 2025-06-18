@@ -17,14 +17,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { CrownIcon, LoginIcon, PhoneIcon } from '@/components/icons/ClashRoyaleIcons';
 import { LockKeyholeIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-// User type ya no es necesario para pasar a la acción, actions.ts la conoce
-// import type { User } from '@/types'; 
-// getLocalStorageItem ya no es necesario
-// import { getLocalStorageItem } from '@/lib/storage'; 
 import { loginUserAction } from '@/lib/actions';
 
-// AUTH_STORAGE_KEY ya no es necesario
-// const AUTH_STORAGE_KEY = 'crDuelsUser';
 
 const loginSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
@@ -56,14 +50,7 @@ export default function LoginPage() {
   const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     setIsLoading(true);
     
-    // Ya no se lee clientStoredUser ni se pasa a la acción
-    // const clientStoredUser = getLocalStorageItem<User>(AUTH_STORAGE_KEY);
-    // let userForAction: User | undefined = undefined;
-    // if (clientStoredUser && clientStoredUser.phone === data.phone && data.phone !== "0000000") {
-    //     userForAction = clientStoredUser;
-    // }
-
-    const result = await loginUserAction(data); // Se llama a la acción solo con 'data'
+    const result = await loginUserAction(data);
 
     if (result.user) {
       auth.login(result.user); 
