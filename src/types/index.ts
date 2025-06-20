@@ -1,9 +1,10 @@
 
+
 // Tipos del Backend (basados en OpenAPI)
 
 export interface BackendUsuarioDto {
   id?: string; // Este será el googleId cuando se comunique con el backend
-  nombre: string;
+  nombre: string; // Este es el 'username' de Google
   email: string;
   telefono: string; // Pattern: ^\\+?\\d{7,15}$
   tagClash: string; // Pattern: ^#?[A-Z0-9]{5,12}$
@@ -72,21 +73,20 @@ export interface User {
   id: string; // Representa el googleId
   username: string; // Mapeado desde 'nombre' de Google/backend
   email: string;
-  phone: string; // Campo adicional de la app
-  clashTag: string; // Con #, ej: #P0LYGJU (campo adicional de la app)
-  nequiAccount: string; // Probablemente el mismo que 'phone' (campo adicional de la app)
-  avatarUrl?: string; // Puede venir de Google o ser placeholder
+  phone: string; 
+  clashTag: string; // Con #, ej: #P0LYGJU
+  nequiAccount: string; // Probablemente el mismo que 'phone'
+  avatarUrl?: string;
   balance: number;
-  friendLink?: string; // Campo adicional de la app
+  friendLink?: string;
   reputacion?: number;
-  // No hay password con Google Sign-In
 }
 
-// Para el formulario de completar perfil después del login con Google
+// Para el formulario de completar perfil después del login con Google (simplificado)
 export interface CompleteProfileFormValues {
   phone: string;
   friendLink: string;
-  clashTag?: string; // Se puede extraer del friendLink
+  // clashTag no es un campo del formulario, se deriva del friendLink
 }
 
 // Valores para el proceso de login/registro con Google
@@ -97,6 +97,17 @@ export interface GoogleAuthValues {
   avatarUrl?: string;
 }
 
+// Datos completos para registrarse usando Google y completando el perfil
+export type RegisterWithGoogleData = {
+  googleId: string;
+  email: string;
+  username: string; // 'nombre' de Google
+  avatarUrl?: string;
+  phone: string;
+  friendLink: string;
+  clashTag: string; // Derivado del friendLink en el cliente antes de llamar al action
+};
+    
 
 export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';
 export type MatchResult = 'win' | 'loss' | 'draw';
@@ -123,15 +134,4 @@ export interface ChatMessage {
   timestamp: string;
   isSystemMessage?: boolean;
 }
-
-// Ya no se usa el LoginFormValues tradicional
-// export interface LoginFormValues {
-//   phone: string;
-//   password?: string;
-// }
-
-// RegisterFormValues se transforma en CompleteProfileFormValues que se usa *después* de la autenticación con Google
-// y se combina con GoogleAuthValues.
-export type RegisterWithGoogleData = GoogleAuthValues & CompleteProfileFormValues;
-
     

@@ -17,19 +17,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { CrownIcon, PhoneIcon, RegisterIcon, UserIcon as AppUserIcon, GoogleIcon } from '@/components/icons/ClashRoyaleIcons';
 import { LinkIcon as LucideLinkIcon, ShieldQuestionIcon, MailIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import type { CompleteProfileFormValues, GoogleAuthValues, RegisterWithGoogleData } from '@/types';
+import type { CompleteProfileFormValues, GoogleAuthValues, RegisterWithGoogleData, User } from '@/types';
 import { registerUserAction } from '@/lib/actions';
 
-// Schema para el segundo paso: completar perfil
+// Schema para el segundo paso: completar perfil (simplificado)
 const completeProfileSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
     .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=([0289PYLQGRJCUV]{3,})&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido." }),
-  clashTag: z.string()
-    .min(3, "El Tag de Clash Royale debe tener al menos 3 caracteres")
-    .regex(/^(#)?[0289PYLQGRJCUV]{3,}$/i, "Formato de Tag de Clash Royale inválido (ej. #P01Y2G3R o P01Y2G3R)")
-    .optional(),
 });
 
 export default function RegisterPage() {
@@ -37,19 +33,16 @@ export default function RegisterPage() {
   const auth = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [googleAuthData, setGoogleAuthData] = useState<GoogleAuthValues | null>(null); // Para guardar datos de Google simulados
-  const [step, setStep] = useState(1); // 1: Botón Google, 2: Formulario completar perfil
+  const [googleAuthData, setGoogleAuthData] = useState<GoogleAuthValues | null>(null);
+  const [step, setStep] = useState(1);
 
   const form = useForm<CompleteProfileFormValues>({
     resolver: zodResolver(completeProfileSchema),
     defaultValues: {
       phone: '',
       friendLink: '',
-      clashTag: '',
     },
   });
-
-  const watchedFriendLink = form.watch('friendLink');
 
   useEffect(() => {
     if (auth.isAuthenticated) {
@@ -57,34 +50,18 @@ export default function RegisterPage() {
     }
   }, [auth.isAuthenticated, router]);
   
-  useEffect(() => {
-    if (watchedFriendLink && step === 2) {
-      const tagRegex = /tag=([0289PYLQGRJCUV]{3,})&/i;
-      const match = watchedFriendLink.match(tagRegex);
-      if (match && match[1]) {
-        const extractedTag = `#${match[1].toUpperCase()}`;
-        if (form.getValues('clashTag') !== extractedTag) {
-          form.setValue('clashTag', extractedTag, { shouldValidate: true, shouldDirty: true });
-        }
-      }
-    }
-  }, [watchedFriendLink, form, step]);
-
-  // Simulación del flujo de "Sign in with Google"
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    // Aquí iría la lógica real de Firebase Auth signInWithPopup(provider)
-    // Simulamos una respuesta exitosa de Google:
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay de red
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
     const simulatedGoogleData: GoogleAuthValues = {
-      googleId: `google-${Date.now()}-${Math.random().toString(36).substring(7)}`, // ID único simulado
+      googleId: `google-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       email: `user${Math.floor(Math.random()*1000)}@example.com`,
-      username: `GoogleUser${Math.floor(Math.random()*100)}`,
+      username: `GoogleUser${Math.floor(Math.random()*100)}`, // Campo 'nombre' de Google
       avatarUrl: `https://placehold.co/100x100.png?text=G${Math.floor(Math.random()*10)}`,
     };
     setGoogleAuthData(simulatedGoogleData);
-    form.reset({ phone: '', friendLink: '', clashTag: '' }); // Resetea el form para el paso 2
-    setStep(2); // Avanza al paso de completar perfil
+    form.reset({ phone: '', friendLink: '' });
+    setStep(2);
     setIsLoading(false);
     toast({ title: "Conectado con Google", description: `Hola ${simulatedGoogleData.username}, por favor completa tu perfil.`});
   };
@@ -98,30 +75,35 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
 
-    let finalClashTag = profileData.clashTag;
-    if (!finalClashTag && profileData.friendLink) {
+    let extractedClashTag = '';
+    if (profileData.friendLink) {
         const tagRegex = /tag=([0289PYLQGRJCUV]{3,})&/i;
         const match = profileData.friendLink.match(tagRegex);
         if (match && match[1]) {
-            finalClashTag = `#${match[1].toUpperCase()}`;
+            extractedClashTag = `#${match[1].toUpperCase()}`;
         }
     }
-    if (!finalClashTag) {
-        toast({ title: "Error de Formulario", description: "No se pudo extraer el Tag de Clash Royale del link de amigo. Por favor, verifica el link o ingresa el Tag manualmente.", variant: "destructive" });
+
+    if (!extractedClashTag) {
+        toast({ title: "Error de Formulario", description: "No se pudo extraer el Tag de Clash Royale del link de amigo. Por favor, verifica el link.", variant: "destructive" });
         setIsLoading(false);
         return;
     }
 
     const fullRegistrationData: RegisterWithGoogleData = {
-      ...googleAuthData,
-      ...profileData,
-      clashTag: finalClashTag,
+      googleId: googleAuthData.googleId,
+      email: googleAuthData.email,
+      username: googleAuthData.username, // Este es el 'nombre' de Google
+      avatarUrl: googleAuthData.avatarUrl,
+      phone: profileData.phone,
+      friendLink: profileData.friendLink,
+      clashTag: extractedClashTag,
     };
 
     const result = await registerUserAction(fullRegistrationData);
 
     if (result.user) {
-      auth.login(result.user);
+      auth.login(result.user as User); // Asegurar el tipo User
       toast({
         title: "¡Registro Exitoso!",
         description: `¡Bienvenido a CR Duels, ${result.user.username}!`,
@@ -134,9 +116,8 @@ export default function RegisterPage() {
         description: result.error,
         variant: "destructive",
       });
-       // Si el error es por usuario ya existente, podríamos querer llevarlo a login
-      if (result.error.includes("ya está registrado")) {
-        setStep(1); // Volver al paso 1 para que pueda intentar login
+      if (result.error.includes("ya está registrado") || result.error.includes("ya está en uso")) {
+        setStep(1); 
       }
     }
     setIsLoading(false);
@@ -169,20 +150,14 @@ export default function RegisterPage() {
 
           {step === 2 && googleAuthData && (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-4">
-                 <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-lg text-foreground flex items-center"><MailIcon className="mr-2 h-5 w-5 text-primary" />Correo Electrónico (de Google)</FormLabel>
-                        <FormControl>
-                        <Input {...field} value={googleAuthData.email} readOnly className="text-base py-5 border-2 focus:border-primary bg-muted/50 cursor-not-allowed" />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+              <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-6">
+                 {/* Campo de Email (No editable, solo informativo si se decide mostrar) */}
+                 {/* 
+                 <div>
+                    <Label className="text-lg text-foreground flex items-center"><MailIcon className="mr-2 h-5 w-5 text-primary" />Correo Electrónico (de Google)</Label>
+                    <Input value={googleAuthData.email} readOnly className="text-base py-5 border-2 focus:border-primary bg-muted/50 cursor-not-allowed mt-1" />
+                 </div>
+                 */}
                 <FormField
                   control={form.control}
                   name="phone"
@@ -207,35 +182,21 @@ export default function RegisterPage() {
                         <Input placeholder="https://link.clashroyale.com/..." {...field} className="text-base py-5 border-2 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
-                      <p className="text-xs text-muted-foreground mt-1">Tu Tag de jugador (#P01Y2G3R) se extraerá automáticamente.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Tu Tag de jugador (ej. #P01Y2G3R) se extraerá automáticamente de este link.</p>
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="clashTag"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-lg text-foreground flex items-center"><ShieldQuestionIcon className="mr-2 h-5 w-5 text-primary" />Tag de Clash Royale</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ej. #P0LYGJU (Se auto-rellena desde el link)" {...field} className="text-base py-5 border-2 focus:border-primary" />
-                      </FormControl>
-                      <FormMessage />
-                      <p className="text-xs text-muted-foreground mt-1">Se extrae del link de amigo. Puedes ajustarlo si es necesario.</p>
-                    </FormItem>
-                  )}
-                />
-                <CartoonButton type="submit" variant="accent" className="w-full mt-5" disabled={isLoading} iconLeft={<RegisterIcon />}>
+                <CartoonButton type="submit" variant="accent" className="w-full mt-8" disabled={isLoading} iconLeft={<RegisterIcon />}>
                   {isLoading ? 'Registrando...' : 'Completar Registro y Jugar'}
                 </CartoonButton>
-                 <Button variant="outline" onClick={() => { setStep(1); setGoogleAuthData(null); }} className="w-full mt-2">
+                 <Button variant="outline" onClick={() => { setStep(1); setGoogleAuthData(null); }} className="w-full mt-3">
                     Cancelar y Volver
                 </Button>
               </form>
             </Form>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col items-center space-y-1 mt-3">
+        <CardFooter className="flex flex-col items-center space-y-1 mt-4">
           <p className="text-sm text-muted-foreground">
             ¿Ya tienes una cuenta?
           </p>
@@ -247,5 +208,4 @@ export default function RegisterPage() {
     </div>
   );
 }
-
     
