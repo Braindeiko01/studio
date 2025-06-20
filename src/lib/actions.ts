@@ -172,7 +172,7 @@ export async function requestTransactionAction(
       id: `trans_${Date.now()}`,
       usuarioId: userId,
       monto: amount,
-      tipo: type, // ✅ CORREGIDO: antes estaba mal como `tipo,`
+      tipo: type, //
       estado: 'PENDIENTE',
       creadoEn: new Date().toISOString()
     },
