@@ -19,7 +19,7 @@ import type {
 let usersInServerMemoryDb: User[] = [];
 
 // URL del Backend (si se usara en el futuro, por ahora las actions operan en memoria)
-const BACKEND_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.BACKEND_API_URL || 'crduels-crduelsproduction.up.railway.app';
 
 
 export async function registerUserAction(
