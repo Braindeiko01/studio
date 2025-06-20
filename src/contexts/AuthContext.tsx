@@ -4,7 +4,7 @@
 import type { User } from '@/types';
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUserDataAction } from '@/lib/actions'; // Para intentar cargar datos del usuario si hay un ID guardado
+import { getUserDataAction, updateUserProfileInMemoryAction } from '@/lib/actions'; // updateUserProfileInMemoryAction es nueva
 
 interface AuthContextType {
   user: User | null;
@@ -12,16 +12,16 @@ interface AuthContextType {
   isLoading: boolean;
   login: (userData: User) => void;
   logout: () => void;
-  updateUser: (updatedData: Partial<User>) => void; 
-  refreshUser: () => Promise<void>; // Para actualizar datos del usuario desde el backend
+  updateUser: (updatedData: Partial<User>) => Promise<{ success: boolean; error?: string | null }>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const USER_ID_STORAGE_KEY = 'cr_duels_user_id'; // Guardaremos solo el ID del usuario
+const USER_ID_STORAGE_KEY = 'cr_duels_google_user_id'; // Guardaremos el googleId
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
@@ -31,16 +31,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (hasMounted) {
-      const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY);
+      const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // storedUserId es googleId
       if (storedUserId) {
-        // Intenta cargar los datos completos del usuario desde el backend usando el ID
+        setIsLoading(true);
         getUserDataAction(storedUserId)
           .then(result => {
             if (result.user) {
               setUser(result.user);
             } else {
-              // Si no se encuentra el usuario o hay error, limpiar el ID guardado
-              localStorage.removeItem(USER_ID_STORAGE_KEY);
+              localStorage.removeItem(USER_ID_STORAGE_KEY); // Limpiar si no se encuentra o hay error
             }
           })
           .catch(error => {
@@ -51,14 +50,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(false);
           });
       } else {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     }
   }, [hasMounted]);
 
   const login = (userData: User) => {
     setUser(userData);
-    if (userData.id) {
+    if (userData.id) { // userData.id es googleId
         localStorage.setItem(USER_ID_STORAGE_KEY, userData.id);
     }
   };
@@ -66,39 +65,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem(USER_ID_STORAGE_KEY);
-    router.push('/login'); // Redirige al login
+    router.push('/login');
   };
   
-  const updateUser = (updatedData: Partial<User>) => {
-    // Esta función actualiza el estado local.
-    // Para persistir en el servidor, el componente que llama a esto debería
-    // invocar un Server Action y luego llamar a updateUser o refreshUser.
-    if (user) {
-      const newUser = { ...user, ...updatedData };
-      setUser(newUser);
+  const updateUser = async (updatedData: Partial<User>): Promise<{ success: boolean; error?: string | null }> => {
+    if (user?.id) { // user.id es googleId
+      // Actualiza el estado local inmediatamente para una UI responsiva
+      const optimisticUser = { ...user, ...updatedData };
+      setUser(optimisticUser);
+
+      // Llama al Server Action para actualizar en el "backend" (memoria)
+      // En un backend real, aquí llamarías al endpoint de actualización del perfil.
+      const result = await updateUserProfileInMemoryAction(user.id, updatedData);
+      if (result.user) {
+        setUser(result.user); // Re-sincroniza con la respuesta del backend
+        return { success: true };
+      } else {
+        // Si falla, revierte al estado anterior del usuario
+        await refreshUser(); // O podrías guardar el estado anterior y revertirlo.
+        return { success: false, error: result.error };
+      }
     }
+    return { success: false, error: "Usuario no autenticado." };
   };
 
   const refreshUser = async () => {
-    if (user?.id) {
+    const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY);
+    if (storedUserId) {
       setIsLoading(true);
       try {
-        const result = await getUserDataAction(user.id);
+        const result = await getUserDataAction(storedUserId);
         if (result.user) {
           setUser(result.user);
         } else if (result.error) {
           console.error("Error refreshing user:", result.error);
-          // Podrías decidir desloguear al usuario si hay un error crítico
-          // logout(); 
+          // Si el usuario ya no existe en el backend, desloguear
+          logout();
         }
       } catch (error) {
         console.error("Failed to refresh user data:", error);
       } finally {
         setIsLoading(false);
       }
+    } else {
+      // Si no hay ID guardado, asegurarse de que el usuario esté deslogueado
+      if (user) setUser(null);
+      setIsLoading(false);
     }
   };
-
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, updateUser, refreshUser }}>
@@ -107,7 +121,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Hook useAuth no necesita cambios
 export const useAuth = () => {
   const context = React.useContext(AuthContext);
   if (context === undefined) {
@@ -115,3 +128,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    

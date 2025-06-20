@@ -2,25 +2,25 @@
 // Tipos del Backend (basados en OpenAPI)
 
 export interface BackendUsuarioDto {
-  id?: string; // Asumiendo que el backend lo devuelve, aunque no esté en el requestBody schema
+  id?: string; // Este será el googleId cuando se comunique con el backend
   nombre: string;
   email: string;
   telefono: string; // Pattern: ^\\+?\\d{7,15}$
-  tagClash: string; // Pattern: ^#?[A-Z0-9]{5,12}$ (La app usa #TAG, el backend puede no querer el #)
+  tagClash: string; // Pattern: ^#?[A-Z0-9]{5,12}$
   linkAmistad?: string; // Pattern: ^(https://link\.clashroyale\.com/invite/friend\\?tag=[A-Z0-9]+)?$
   saldo?: number; // minimum: 0.0
   reputacion?: number;
 }
 
 export interface BackendTransaccionRequestDto {
-  usuarioId: string; // UUID
+  usuarioId: string; // UUID (será el googleId)
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
 }
 
 export interface BackendTransaccionResponseDto {
-  id: string; // UUID
-  usuarioId: string; // UUID
+  id: string; // UUID de la transacción
+  usuarioId: string; // UUID (googleId)
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
   estado: "PENDIENTE" | "APROBADA" | "RECHAZADA";
@@ -28,31 +28,32 @@ export interface BackendTransaccionResponseDto {
 }
 
 export interface BackendApuestaRequestDto {
-  jugador1Id: string; // UUID
-  jugador2Id?: string; // UUID (opcional si es una apuesta abierta)
+  jugador1Id: string; // UUID (googleId)
+  jugador2Id?: string; // UUID (googleId - opcional si es una apuesta abierta)
   monto: number;
-  modoJuego: string; // Debería ser un enum en el backend, ej: "CLASSIC", "TRIPLE_DRAFT"
+  modoJuego: string;
 }
 
 export interface BackendApuestaResponseDto {
-  id: string; // UUID
+  id: string; // UUID de la apuesta
+  jugador1Id?: string; // Añadido para consistencia
+  jugador2Id?: string; // Añadido para consistencia
   monto: number;
   modoJuego: string;
   estado: "PENDIENTE" | "EMPAREJADA" | "EN_PROGRESO" | "FINALIZADA" | "CANCELADA";
   creadoEn: string; // date-time
-  // Faltarían jugador1Id, jugador2Id, etc. en la respuesta según la lógica de la app
 }
 
 export interface BackendPartidaRequestDto {
-  apuestaId: string; // UUID
-  ganadorId: string; // UUID
-  resultadoJson?: string; // Para detalles adicionales de la partida
+  apuestaId: string; // UUID de la apuesta
+  ganadorId: string; // UUID (googleId)
+  resultadoJson?: string;
 }
 
 export interface BackendPartidaResponseDto {
-  id: string; // UUID
-  apuestaId: string; // UUID
-  ganadorId?: string; // UUID (puede no haber ganador si se cancela o empata)
+  id: string; // UUID de la partida
+  apuestaId: string; // UUID de la apuesta
+  ganadorId?: string; // UUID (googleId)
   validada: boolean;
   validadaEn?: string; // date-time
 }
@@ -65,60 +66,72 @@ export interface BackendMatchResultDto {
 }
 
 
-// Tipos de la Aplicación Frontend (ajustados)
+// Tipos de la Aplicación Frontend
 
 export interface User {
-  id: string; // UUID del backend
-  phone: string;
-  username: string; // Mapeado desde 'nombre' del backend
-  email: string; // Nuevo campo
-  clashTag: string; // Con #, ej: #P0LYGJU
-  nequiAccount: string; // Probablemente el mismo que 'phone'
-  password?: string; // Solo para simulación de login local si es necesario, no va al backend
-  avatarUrl?: string; // Generado/gestionado por el cliente
-  balance: number; // Mapeado desde 'saldo'
-  friendLink?: string; // Mapeado desde 'linkAmistad'
+  id: string; // Representa el googleId
+  username: string; // Mapeado desde 'nombre' de Google/backend
+  email: string;
+  phone: string; // Campo adicional de la app
+  clashTag: string; // Con #, ej: #P0LYGJU (campo adicional de la app)
+  nequiAccount: string; // Probablemente el mismo que 'phone' (campo adicional de la app)
+  avatarUrl?: string; // Puede venir de Google o ser placeholder
+  balance: number;
+  friendLink?: string; // Campo adicional de la app
   reputacion?: number;
+  // No hay password con Google Sign-In
 }
 
-export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';
-export type MatchResult = 'win' | 'loss' | 'draw'; // Para el frontend
+// Para el formulario de completar perfil después del login con Google
+export interface CompleteProfileFormValues {
+  phone: string;
+  friendLink: string;
+  clashTag?: string; // Se puede extraer del friendLink
+}
 
-// Interfaz para Apuestas en el frontend, podría necesitar más campos que BackendApuestaResponseDto
+// Valores para el proceso de login/registro con Google
+export interface GoogleAuthValues {
+  googleId: string;
+  email: string;
+  username: string; // 'nombre' de Google
+  avatarUrl?: string;
+}
+
+
+export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';
+export type MatchResult = 'win' | 'loss' | 'draw';
+
 export interface Bet {
-  id: string; // UUID de la apuesta del backend
-  userId: string; // El ID del usuario de la app
-  matchId?: string; // ID de la partida si ya se jugó (BackendPartidaResponseDto.id)
-  amount: number; // monto de la apuesta
-  opponentTag?: string; // Para UI, se obtendría de los datos del oponente si está emparejada
-  opponentId?: string;
-  matchDate: string; // creadoEn de la apuesta
-  result?: MatchResult; // Resultado para el usuario (win/loss)
-  status: BackendApuestaResponseDto['estado']; // Estado de la apuesta del backend
+  id: string;
+  userId: string; // googleId
+  matchId?: string;
+  amount: number;
+  opponentTag?: string;
+  opponentId?: string; // googleId del oponente
+  matchDate: string;
+  result?: MatchResult;
+  status: BackendApuestaResponseDto['estado'];
   modoJuego: string;
   screenshotUrl?: string;
 }
 
 export interface ChatMessage {
   id: string;
-  matchId: string; // Podría ser el ID de la apuesta o partida
-  senderId: string;
+  matchId: string;
+  senderId: string; // googleId o 'system'
   text: string;
   timestamp: string;
   isSystemMessage?: boolean;
 }
 
-// Para formularios, igual que antes pero se adaptarán
-export interface RegisterFormValues {
-  username: string; // Corresponderá a 'nombre' en el DTO
-  email: string; // Nuevo campo
-  phone: string;
-  password?: string; // El backend no lo usa, pero el form lo puede tener para confirmación o UI
-  clashTag?: string; // Se extraerá o ingresará, backend espera sin #
-  friendLink: string; // Requerido
-}
+// Ya no se usa el LoginFormValues tradicional
+// export interface LoginFormValues {
+//   phone: string;
+//   password?: string;
+// }
 
-export interface LoginFormValues {
-  phone: string;
-  password?: string;
-}
+// RegisterFormValues se transforma en CompleteProfileFormValues que se usa *después* de la autenticación con Google
+// y se combina con GoogleAuthValues.
+export type RegisterWithGoogleData = GoogleAuthValues & CompleteProfileFormValues;
+
+    
