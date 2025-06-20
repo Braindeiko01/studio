@@ -8,7 +8,7 @@ import type { Bet } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollTextIcon, VictoryIcon, DefeatIcon, InfoIcon } from '@/components/icons/ClashRoyaleIcons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Badge } from '@/components/ui/badge';
 
 const HistoryPageContent = () => {
   const { user, isLoading: authIsLoading } = useAuth();
@@ -20,7 +20,6 @@ const HistoryPageContent = () => {
       if (user) {
         // En un sistema real, aquí se haría un fetch del historial de apuestas del usuario desde un backend.
         // Por ahora, el historial de `bets` permanecerá vacío ya que no hay persistencia de apuestas.
-        // Ejemplo de cómo se podría cargar si getUserBetsAction existiera y devolviera Bet[]:
         /*
         const fetchBets = async () => {
           if (user?.id) { // Asumiendo que user.id es el googleId
@@ -48,8 +47,8 @@ const HistoryPageContent = () => {
   if (!user) return <p>Debes iniciar sesión para ver tu historial.</p>;
 
   const wonBets = bets.filter(bet => bet.result === 'win');
-  const lostBets = bets.filter(bet => bet.result === 'loss'); // Corregido
-  const pendingBets = bets.filter(bet => !bet.result); // Apuestas sin resultado (pendientes o activas)
+  const lostBets = bets.filter(bet => bet.result === 'loss');
+  const pendingBets = bets.filter(bet => !bet.result);
 
   const BetCard = ({ bet }: { bet: Bet }) => (
     <Card className="mb-4 shadow-md border-border hover:shadow-lg transition-shadow duration-200">
