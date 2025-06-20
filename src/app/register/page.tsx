@@ -18,7 +18,7 @@ import { CrownIcon, PhoneIcon, RegisterIcon, UserIcon as AppUserIcon, GoogleIcon
 import { LinkIcon as LucideLinkIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { CompleteProfileFormValues, GoogleAuthValues, RegisterWithGoogleData, User } from '@/types';
-import { registerUserAction } from '@/lib/actions';
+import { registerUserAction, loginWithGoogleAction } from '@/lib/actions';
 
 // Schema para el segundo paso: completar perfil
 const completeProfileSchema = z.object({
@@ -53,7 +53,22 @@ export default function RegisterPage() {
   }, [auth.isAuthenticated, router]);
 
   useEffect(() => {
-    // Pre-fill form when googleAuthData is available (step 2)
+    if (step === 1) {
+      try {
+        const pendingData = sessionStorage.getItem('pendingGoogleAuthData');
+        if (pendingData) {
+          const parsedData = JSON.parse(pendingData) as GoogleAuthValues;
+          setGoogleAuthData(parsedData);
+          setStep(2);
+        }
+      } catch (e) {
+        console.error("Could not parse pending Google auth data from sessionStorage", e);
+        sessionStorage.removeItem('pendingGoogleAuthData');
+      }
+    }
+  }, [step]);
+  
+  useEffect(() => {
     if (step === 2 && googleAuthData) {
       form.reset({
         username: googleAuthData.username || '',
@@ -62,7 +77,7 @@ export default function RegisterPage() {
       });
     }
   }, [step, googleAuthData, form]);
-  
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000)); 
@@ -72,10 +87,20 @@ export default function RegisterPage() {
       username: `GoogleUser${Math.floor(Math.random()*100)}`,
       avatarUrl: `https://placehold.co/100x100.png?text=G${Math.floor(Math.random()*10)}`,
     };
-    setGoogleAuthData(simulatedGoogleData);
-    setStep(2);
+
+    const response = await loginWithGoogleAction(simulatedGoogleData.googleId);
+    if(response.user){
+        auth.login(response.user);
+        router.push('/');
+    } else if (response.needsProfileCompletion){
+        setGoogleAuthData(simulatedGoogleData);
+        setStep(2);
+        toast({ title: "Conectado con Google", description: `Hola ${simulatedGoogleData.username}, por favor completa tu perfil.`});
+    } else {
+        toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
+    }
+    
     setIsLoading(false);
-    toast({ title: "Conectado con Google", description: `Hola ${simulatedGoogleData.username}, por favor completa tu perfil.`});
   };
 
 
@@ -115,6 +140,7 @@ export default function RegisterPage() {
     const result = await registerUserAction(fullRegistrationData);
 
     if (result.user) {
+      sessionStorage.removeItem('pendingGoogleAuthData');
       auth.login(result.user as User);
       toast({
         title: "¡Registro Exitoso!",
@@ -134,6 +160,13 @@ export default function RegisterPage() {
     }
     setIsLoading(false);
   };
+  
+  const handleCancelAndGoBack = () => {
+    setStep(1); 
+    setGoogleAuthData(null); 
+    sessionStorage.removeItem('pendingGoogleAuthData');
+    form.reset({ username: '', phone: '', friendLink: '' });
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 font-body animate-fade-in-up">
@@ -207,7 +240,7 @@ export default function RegisterPage() {
                 <CartoonButton type="submit" variant="accent" className="w-full mt-8" disabled={isLoading} iconLeft={<RegisterIcon />}>
                   {isLoading ? 'Registrando...' : 'Completar Registro y Jugar'}
                 </CartoonButton>
-                 <Button variant="outline" onClick={() => { setStep(1); setGoogleAuthData(null); form.reset({ username: '', phone: '', friendLink: '' }); }} className="w-full mt-3">
+                 <Button variant="outline" onClick={handleCancelAndGoBack} className="w-full mt-3">
                     Cancelar y Volver
                 </Button>
               </form>
@@ -226,5 +259,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-    
-

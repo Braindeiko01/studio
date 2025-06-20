@@ -41,11 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .then(result => {
             if (result.user) {
               // getUserDataAction devuelve User donde User.id ya es el googleId
-              setUser({ 
-                ...result.user, 
-                // Asegurar que el avatarUrl local se mantenga si el backend no lo devuelve o es el placeholder
-                avatarUrl: result.user.avatarUrl?.includes('placehold.co') && user?.avatarUrl ? user.avatarUrl : result.user.avatarUrl,
-              });
+              setUser(result.user);
             } else {
               localStorage.removeItem(USER_ID_STORAGE_KEY);
             }
@@ -61,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       }
     }
-  }, [hasMounted]);
+  }, [hasMounted, user?.avatarUrl]); // Dependencia en avatarUrl para re-renderizar si cambia
 
   const login = (userData: User) => {
     // userData.id es el googleId
@@ -108,11 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const result = await getUserDataAction(storedUserId); // Usar googleId para la llamada
         if (result.user) {
-          setUser({ 
-            ...result.user,
-            // Asegurar que el avatarUrl local se mantenga si el backend no lo devuelve o es el placeholder
-            avatarUrl: result.user.avatarUrl?.includes('placehold.co') && user?.avatarUrl ? user.avatarUrl : result.user.avatarUrl,
-          });
+          setUser(result.user);
         } else if (result.error) {
           console.error("Error refreshing user:", result.error);
           logout(); 

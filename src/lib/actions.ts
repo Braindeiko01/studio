@@ -18,9 +18,6 @@ import type {
 // URL del Backend. Se usa la variable de entorno o la URL de producción de Railway por defecto.
 const BACKEND_URL = process.env.BACKEND_API_URL || 'https://crduels-crduelsproduction.up.railway.app';
 
-// Simulación de base de datos en memoria del servidor (para el flujo original, se deja por si se reactiva)
-// let usersInServerMemoryDb: User[] = [];
-
 export async function registerUserAction(
   data: RegisterWithGoogleData
 ): Promise<{ user: User | null; error: string | null }> {
@@ -79,13 +76,12 @@ export async function registerUserAction(
   }
 }
 
-
 export async function loginWithGoogleAction(
-  googleAuthData: GoogleAuthValues
+  googleId: string
 ): Promise<{ user: User | null; error: string | null; needsProfileCompletion?: boolean }> {
   
   // Intenta obtener el usuario del backend usando el googleId
-  const existingUserResult = await getUserDataAction(googleAuthData.googleId);
+  const existingUserResult = await getUserDataAction(googleId);
 
   if (existingUserResult.user) {
     // El usuario ya existe en el backend
@@ -93,14 +89,7 @@ export async function loginWithGoogleAction(
   } else {
     // El usuario no existe en el backend (o hubo un error al obtenerlo que no sea 404).
     // Se asume que es un nuevo usuario y necesita completar el perfil.
-    // Preparamos datos parciales para el formulario de completar perfil.
-    const partialUserForFrontend: Partial<User> = {
-        id: googleAuthData.googleId,
-        username: googleAuthData.username,
-        email: googleAuthData.email,
-        avatarUrl: googleAuthData.avatarUrl,
-    };
-    return { user: partialUserForFrontend, error: null, needsProfileCompletion: true };
+    return { user: null, error: null, needsProfileCompletion: true };
   }
 }
 

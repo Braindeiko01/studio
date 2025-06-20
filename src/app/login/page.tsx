@@ -39,31 +39,26 @@ export default function LoginPage() {
     };
 
     try {
-      const response = await loginWithGoogleAction(
-        simulatedGoogleData.googleId,
-        simulatedGoogleData.email,
-        simulatedGoogleData.username,
-        simulatedGoogleData.avatarUrl
-      );
+      // loginWithGoogleAction now checks if the user exists on the backend
+      const response = await loginWithGoogleAction(simulatedGoogleData.googleId);
 
       if (response.user) {
-        if (response.needsProfileCompletion) {
-          // Store the partial user data temporarily to pre-fill the next step
-          // In a real app, consider more secure ways to pass this if sensitive, or use state management
+          // User exists, log them in
+          auth.login(response.user as User);
+          toast({ title: "¡Bienvenido de nuevo!", description: `Hola ${response.user.username}`, variant: "default" });
+          router.push('/');
+      } else if (response.needsProfileCompletion) {
+          // User does not exist, redirect to complete profile
           try {
-            sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify(response.user));
-            router.push('/register?step=2'); // Redirect to complete profile
+            // Store the simulated Google data to pre-fill the registration form
+            sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify(simulatedGoogleData));
+            router.push('/register'); 
           } catch (e) {
             console.error("Error setting sessionStorage:", e);
             toast({ title: "Error de Sesión", description: "No se pudo guardar la información temporal. Intenta de nuevo.", variant: "destructive"});
           }
-        } else {
-          auth.login(response.user as User); // Cast as User as needsProfileCompletion is false
-          toast({ title: "¡Bienvenido!", description: `Hola ${response.user.username}`, variant: "default" });
-          router.push('/');
-        }
       } else {
-        toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
+          toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
       }
     } catch (error: any) {
       toast({ title: "Error de autenticación", description: error.message || "Ocurrió un error inesperado.", variant: "destructive" });
