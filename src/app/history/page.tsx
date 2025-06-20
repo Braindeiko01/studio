@@ -48,7 +48,7 @@ const HistoryPageContent = () => {
   if (!user) return <p>Debes iniciar sesión para ver tu historial.</p>;
 
   const wonBets = bets.filter(bet => bet.result === 'win');
-  const lostBets = bets.filter(bet => bet.result === 'loss'); // Corregido: 'lose' a 'loss'
+  const lostBets = bets.filter(bet => bet.result === 'loss'); // Corregido
   const pendingBets = bets.filter(bet => !bet.result); // Apuestas sin resultado (pendientes o activas)
 
   const BetCard = ({ bet }: { bet: Bet }) => (
