@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (hasMounted) {
-      const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // Este es el ID del backend
+      const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // Este es el ID del backend (UUID)
       if (storedUserId) {
         setIsLoading(true);
         getUserDataAction(storedUserId) // Se llama con el ID del backend
@@ -41,6 +41,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (result.user) {
               // Si necesitamos el googleId y no viene del backend, intentamos cargarlo de localStorage
               const storedGoogleId = localStorage.getItem(GOOGLE_ID_STORAGE_KEY);
+              // Aseguramos que el usuario tenga el googleId si está disponible.
+              // Nota: getUserDataAction podría ser mejorado para devolver el googleId si el backend lo almacena.
               setUser({ ...result.user, googleId: result.user.googleId || storedGoogleId || undefined });
             } else {
               // Si no se encuentra el usuario en el backend, limpiamos localStorage
@@ -64,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = (userData: User) => {
     setUser(userData);
-    if (userData.id) { // userData.id es el ID del backend
+    if (userData.id) { // userData.id es el ID del backend (UUID)
         localStorage.setItem(USER_ID_STORAGE_KEY, userData.id);
     }
     if (userData.googleId) { // Guardar googleId si está disponible
@@ -80,38 +82,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const updateUser = async (updatedData: Partial<User>): Promise<{ success: boolean; error?: string | null }> => {
-    if (user?.id) { // user.id es el ID del backend
-      const optimisticUser = { ...user, ...updatedData } as User; // Asegurar que es User
-      setUser(optimisticUser);
-
-      // LLAMADA A LA API DE ACTUALIZACIÓN (NO EXISTE EN EL SPEC ACTUAL)
-      // const result = await updateUserProfileOnBackendAction(user.id, updatedData);
-      // if (result.user) {
-      //   setUser(result.user); 
-      //   return { success: true };
-      // } else {
-      //   await refreshUser(); 
-      //   return { success: false, error: result.error };
-      // }
-
-      // Simulación en memoria ya que la API no tiene endpoint de actualización
-      const simulationResult = await updateUserProfileInMemoryAction(user.id, updatedData);
-      if (simulationResult.user) {
-         // setUser(simulationResult.user); // Ya se hizo optimistic update
-         console.warn("Perfil actualizado solo en memoria del frontend debido a limitación de API.");
-         return { success: true };
-      } else {
-         // Revertir si la simulación fallara (improbable aquí) o si hubiera una llamada real fallida
-         await refreshUser();
-         return { success: false, error: simulationResult.error || "Error simulando actualización." };
-      }
-
+    if (!user || !user.id) { // user.id es el ID del backend (UUID)
+      return { success: false, error: "Usuario no autenticado." };
     }
-    return { success: false, error: "Usuario no autenticado." };
+    
+    // Actualización optimista en el frontend
+    const optimisticUser = { ...user, ...updatedData } as User; 
+    setUser(optimisticUser);
+
+    // ** NOTA IMPORTANTE SOBRE LA API DEL BACKEND **
+    // La API actual (según la especificación OpenAPI) NO tiene un endpoint para actualizar 
+    // el perfil de un usuario. La función `updateUserProfileInMemoryAction` es una simulación.
+    // Los cambios NO se persistirán en el backend hasta que se implemente dicho endpoint.
+    const simulationResult = await updateUserProfileInMemoryAction(user.id, updatedData);
+    
+    if (simulationResult.user) {
+       // console.warn("Perfil actualizado solo en memoria del frontend debido a limitación de API.");
+       // La actualización optimista ya ocurrió. Si la simulación/backend devolviera datos distintos,
+       // aquí se podría re-sincronizar: setUser(simulationResult.user);
+       return { success: true };
+    } else {
+       // Revertir si la simulación fallara o si hubiera una llamada real fallida
+       await refreshUser(); // Vuelve a cargar los datos del "backend" (o estado anterior)
+       return { success: false, error: simulationResult.error || "Error simulando actualización." };
+    }
   };
 
   const refreshUser = async () => {
-    const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // ID del backend
+    const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // ID del backend (UUID)
     if (storedUserId) {
       setIsLoading(true);
       try {
@@ -121,15 +119,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser({ ...result.user, googleId: result.user.googleId || storedGoogleId || undefined });
         } else if (result.error) {
           console.error("Error refreshing user:", result.error);
-          logout(); // Desloguear si el usuario ya no existe o hay error grave
+          logout(); 
         }
       } catch (error) {
         console.error("Failed to refresh user data:", error);
+        logout(); // Desloguear en caso de error de red grave
       } finally {
         setIsLoading(false);
       }
     } else {
-      if (user) setUser(null); // Asegurar deslogueo si no hay ID
+      if (user) setUser(null); 
       setIsLoading(false);
     }
   };

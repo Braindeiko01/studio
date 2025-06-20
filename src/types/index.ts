@@ -35,8 +35,8 @@ export interface BackendApuestaRequestDto {
 
 export interface BackendApuestaResponseDto {
   id: string; // UUID de la apuesta
-  jugador1Id?: string;
-  jugador2Id?: string;
+  jugador1Id?: string; // UUID del backend
+  jugador2Id?: string; // UUID del backend
   monto: number;
   modoJuego: string;
   estado: "PENDIENTE" | "EMPAREJADA" | "EN_PROGRESO" | "FINALIZADA" | "CANCELADA";
@@ -69,8 +69,8 @@ export interface BackendMatchResultDto {
 
 export interface User {
   id: string; // Representa el ID del usuario generado por el BACKEND (UUID)
-  googleId?: string; // ID de Google, guardado para referencia.
-  username: string; // Mapeado desde 'nombre' del backend
+  googleId?: string; // ID de Google, guardado para referencia del frontend.
+  username: string; // Mapeado desde 'nombre' del backend/Google
   email: string;
   phone: string;
   clashTag: string; // Con #, ej: #P0LYGJU
@@ -83,8 +83,8 @@ export interface User {
 
 // Para el formulario de completar perfil después del login con Google
 export interface CompleteProfileFormValues {
-  username: string; // Este es el 'nombre' que el usuario confirma/elige
-  phone: string;
+  username: string; // Nombre de usuario que el usuario elige/confirma
+  phone: string;    // Teléfono que también se usa para Nequi
   friendLink: string;
 }
 
@@ -97,11 +97,11 @@ export interface GoogleAuthValues {
 }
 
 // Datos completos para registrarse: combina GoogleAuthValues y CompleteProfileFormValues
-export type RegisterData = {
-  googleId: string; // Necesario para asociar con el usuario de Google
-  email: string; // Email de Google
-  username: string; // Username elegido/confirmado por el usuario
-  avatarUrl?: string; // Avatar de Google (o default)
+export type RegisterWithGoogleData = {
+  googleId: string; 
+  email: string; 
+  username: string; 
+  avatarUrl?: string;
   phone: string;
   friendLink: string;
   clashTag: string; // Derivado del friendLink
@@ -112,12 +112,12 @@ export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';
 export type MatchResult = 'win' | 'loss' | 'draw';
 
 export interface Bet {
-  id: string;
-  userId: string; // ID del usuario del backend
-  matchId?: string;
+  id: string; // ID de la apuesta (del backend)
+  userId: string; // ID del usuario del backend (UUID)
+  matchId?: string; // Si se mapea a una partida/chat local
   amount: number;
   opponentTag?: string;
-  opponentId?: string; // ID del oponente del backend
+  opponentId?: string; // ID del oponente del backend (UUID)
   matchDate: string;
   result?: MatchResult;
   status: BackendApuestaResponseDto['estado'];
@@ -128,7 +128,7 @@ export interface Bet {
 export interface ChatMessage {
   id: string;
   matchId: string;
-  senderId: string; // ID del usuario del backend o 'system'
+  senderId: string; // ID del usuario del backend (UUID) o 'system'
   text: string;
   timestamp: string;
   isSystemMessage?: boolean;
