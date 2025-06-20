@@ -1,5 +1,4 @@
 
-
 // Tipos del Backend (basados en OpenAPI)
 
 export interface BackendUsuarioDto {
@@ -71,7 +70,7 @@ export interface BackendMatchResultDto {
 
 export interface User {
   id: string; // Representa el googleId
-  username: string; // Mapeado desde 'nombre' de Google/backend
+  username: string; // Mapeado desde 'nombre' de Google/backend, o elegido por el usuario
   email: string;
   phone: string; 
   clashTag: string; // Con #, ej: #P0LYGJU
@@ -82,11 +81,11 @@ export interface User {
   reputacion?: number;
 }
 
-// Para el formulario de completar perfil después del login con Google (simplificado)
+// Para el formulario de completar perfil después del login con Google
 export interface CompleteProfileFormValues {
+  username: string;
   phone: string;
   friendLink: string;
-  // clashTag no es un campo del formulario, se deriva del friendLink
 }
 
 // Valores para el proceso de login/registro con Google
@@ -100,9 +99,9 @@ export interface GoogleAuthValues {
 // Datos completos para registrarse usando Google y completando el perfil
 export type RegisterWithGoogleData = {
   googleId: string;
-  email: string;
-  username: string; // 'nombre' de Google
-  avatarUrl?: string;
+  email: string; // Email de Google (no editable por el usuario en este flujo)
+  username: string; // Username elegido/confirmado por el usuario
+  avatarUrl?: string; // Avatar de Google (o default)
   phone: string;
   friendLink: string;
   clashTag: string; // Derivado del friendLink en el cliente antes de llamar al action
@@ -135,3 +134,4 @@ export interface ChatMessage {
   isSystemMessage?: boolean;
 }
     
+

@@ -15,13 +15,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { CrownIcon, PhoneIcon, RegisterIcon, UserIcon as AppUserIcon, GoogleIcon } from '@/components/icons/ClashRoyaleIcons';
-import { LinkIcon as LucideLinkIcon, ShieldQuestionIcon, MailIcon } from 'lucide-react';
+import { LinkIcon as LucideLinkIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import type { CompleteProfileFormValues, GoogleAuthValues, RegisterWithGoogleData, User } from '@/types';
 import { registerUserAction } from '@/lib/actions';
 
-// Schema para el segundo paso: completar perfil (simplificado)
+// Schema para el segundo paso: completar perfil
 const completeProfileSchema = z.object({
+  username: z.string().min(3, "El nombre de usuario debe tener al menos 3 caracteres").max(20, "El nombre de usuario no puede exceder los 20 caracteres"),
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
@@ -39,6 +40,7 @@ export default function RegisterPage() {
   const form = useForm<CompleteProfileFormValues>({
     resolver: zodResolver(completeProfileSchema),
     defaultValues: {
+      username: '',
       phone: '',
       friendLink: '',
     },
@@ -49,6 +51,17 @@ export default function RegisterPage() {
       router.push('/');
     }
   }, [auth.isAuthenticated, router]);
+
+  useEffect(() => {
+    // Pre-fill form when googleAuthData is available (step 2)
+    if (step === 2 && googleAuthData) {
+      form.reset({
+        username: googleAuthData.username || '',
+        phone: '',
+        friendLink: '',
+      });
+    }
+  }, [step, googleAuthData, form]);
   
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -56,11 +69,10 @@ export default function RegisterPage() {
     const simulatedGoogleData: GoogleAuthValues = {
       googleId: `google-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       email: `user${Math.floor(Math.random()*1000)}@example.com`,
-      username: `GoogleUser${Math.floor(Math.random()*100)}`, // Campo 'nombre' de Google
+      username: `GoogleUser${Math.floor(Math.random()*100)}`,
       avatarUrl: `https://placehold.co/100x100.png?text=G${Math.floor(Math.random()*10)}`,
     };
     setGoogleAuthData(simulatedGoogleData);
-    form.reset({ phone: '', friendLink: '' });
     setStep(2);
     setIsLoading(false);
     toast({ title: "Conectado con Google", description: `Hola ${simulatedGoogleData.username}, por favor completa tu perfil.`});
@@ -92,8 +104,8 @@ export default function RegisterPage() {
 
     const fullRegistrationData: RegisterWithGoogleData = {
       googleId: googleAuthData.googleId,
-      email: googleAuthData.email,
-      username: googleAuthData.username, // Este es el 'nombre' de Google
+      email: googleAuthData.email, // Email from Google
+      username: profileData.username, // Username from form
       avatarUrl: googleAuthData.avatarUrl,
       phone: profileData.phone,
       friendLink: profileData.friendLink,
@@ -103,7 +115,7 @@ export default function RegisterPage() {
     const result = await registerUserAction(fullRegistrationData);
 
     if (result.user) {
-      auth.login(result.user as User); // Asegurar el tipo User
+      auth.login(result.user as User);
       toast({
         title: "¡Registro Exitoso!",
         description: `¡Bienvenido a CR Duels, ${result.user.username}!`,
@@ -151,13 +163,19 @@ export default function RegisterPage() {
           {step === 2 && googleAuthData && (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-6">
-                 {/* Campo de Email (No editable, solo informativo si se decide mostrar) */}
-                 {/* 
-                 <div>
-                    <Label className="text-lg text-foreground flex items-center"><MailIcon className="mr-2 h-5 w-5 text-primary" />Correo Electrónico (de Google)</Label>
-                    <Input value={googleAuthData.email} readOnly className="text-base py-5 border-2 focus:border-primary bg-muted/50 cursor-not-allowed mt-1" />
-                 </div>
-                 */}
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-lg text-foreground flex items-center"><AppUserIcon className="mr-2 h-5 w-5 text-primary" />Nombre de Usuario</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Elige tu nombre de usuario" {...field} className="text-base py-5 border-2 focus:border-primary" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="phone"
@@ -189,7 +207,7 @@ export default function RegisterPage() {
                 <CartoonButton type="submit" variant="accent" className="w-full mt-8" disabled={isLoading} iconLeft={<RegisterIcon />}>
                   {isLoading ? 'Registrando...' : 'Completar Registro y Jugar'}
                 </CartoonButton>
-                 <Button variant="outline" onClick={() => { setStep(1); setGoogleAuthData(null); }} className="w-full mt-3">
+                 <Button variant="outline" onClick={() => { setStep(1); setGoogleAuthData(null); form.reset({ username: '', phone: '', friendLink: '' }); }} className="w-full mt-3">
                     Cancelar y Volver
                 </Button>
               </form>
@@ -209,3 +227,4 @@ export default function RegisterPage() {
   );
 }
     
+
