@@ -3,8 +3,8 @@
 
 import type {
   User,
-  RegisterWithGoogleData,
-  // Backend DTOs - currently not used for in-memory operations but kept for potential future use
+  RegisterData,
+  GoogleAuthValues,
   BackendUsuarioDto,
   BackendTransaccionRequestDto,
   BackendTransaccionResponseDto,
@@ -15,187 +15,238 @@ import type {
   BackendMatchResultDto,
 } from '@/types';
 
-// Simulación de base de datos en memoria del servidor
+// Simulación de base de datos en memoria del servidor (para funciones no migradas o como fallback)
 let usersInServerMemoryDb: User[] = [];
 
-// URL del Backend (si se usara en el futuro, por ahora las actions operan en memoria)
-const BACKEND_URL = process.env.BACKEND_API_URL || 'crduels-crduelsproduction.up.railway.app';
+// URL del Backend. Asegúrate de que esta URL sea la correcta para tu instancia de Railway.
+// Configura la variable de entorno BACKEND_API_URL en Railway.
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://crduels-crduelsproduction.up.railway.app';
 
 
 export async function registerUserAction(
-  data: RegisterWithGoogleData
+  data: RegisterData
 ): Promise<{ user: User | null; error: string | null }> {
-  const existingUserById = usersInServerMemoryDb.find(u => u.id === data.googleId);
-  if (existingUserById) {
-    return { user: null, error: `El usuario con Google ID ${data.googleId} ya está registrado. Intenta iniciar sesión.` };
-  }
-  
-  // El email también debería ser único si se considera un identificador secundario
-  const existingUserByEmail = usersInServerMemoryDb.find(u => u.email.toLowerCase() === data.email.toLowerCase());
-  if (existingUserByEmail) {
-    return { user: null, error: `El correo electrónico ${data.email} ya está en uso.`};
-  }
-
-  const existingUserByPhone = usersInServerMemoryDb.find(u => u.phone === data.phone);
-  if (existingUserByPhone) {
-    return { user: null, error: `El número de teléfono ${data.phone} ya está en uso.` };
-  }
-
-  const newUser: User = {
-    id: data.googleId, // googleId is the main ID
-    username: data.username, // from Google
-    email: data.email, // from Google
-    phone: data.phone, // from app form
-    clashTag: data.clashTag || '', // from app form (or extracted from friendLink)
-    nequiAccount: data.phone, // Use phone as Nequi account
-    balance: 0, // Initial balance
-    friendLink: data.friendLink || '', // from app form
-    avatarUrl: data.avatarUrl || `https://placehold.co/100x100.png?text=${data.username[0]?.toUpperCase() || 'U'}`,
-    reputacion: 0, // Initial reputation
+  const backendPayload: Omit<BackendUsuarioDto, 'id' | 'saldo' | 'reputacion'> = {
+    nombre: data.username,
+    email: data.email,
+    telefono: data.phone,
+    tagClash: data.clashTag,
+    linkAmistad: data.friendLink,
   };
 
-  usersInServerMemoryDb.push(newUser);
-  // console.log('User registered in-memory:', newUser);
-  // console.log('Current DB:', usersInServerMemoryDb.map(u => ({id: u.id, username: u.username, phone: u.phone, email: u.email })));
-  return { user: newUser, error: null };
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/usuarios/registro`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(backendPayload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `Error del servidor: ${response.status}` }));
+      return { user: null, error: errorData.message || `Error ${response.status} al registrar usuario.` };
+    }
+
+    const registeredBackendUser = await response.json() as BackendUsuarioDto;
+
+    if (!registeredBackendUser.id) {
+        return { user: null, error: "El backend no devolvió un ID para el usuario registrado." };
+    }
+
+    const appUser: User = {
+      id: registeredBackendUser.id, // ID del backend
+      googleId: data.googleId, // Guardamos el googleId original
+      username: registeredBackendUser.nombre,
+      email: registeredBackendUser.email,
+      phone: registeredBackendUser.telefono,
+      clashTag: registeredBackendUser.tagClash,
+      nequiAccount: registeredBackendUser.telefono, // Asumimos que Nequi es el mismo teléfono
+      balance: registeredBackendUser.saldo ?? 0,
+      friendLink: registeredBackendUser.linkAmistad,
+      avatarUrl: data.avatarUrl || `https://placehold.co/100x100.png?text=${registeredBackendUser.nombre[0]?.toUpperCase() || 'U'}`,
+      reputacion: registeredBackendUser.reputacion ?? 0,
+    };
+    
+    // Opcional: guardar en memoria local si es necesario para funciones no migradas
+    // usersInServerMemoryDb.push(appUser); 
+
+    return { user: appUser, error: null };
+
+  } catch (error: any) {
+    console.error("Error en registerUserAction:", error);
+    return { user: null, error: error.message || "Ocurrió un error de red al intentar registrar." };
+  }
 }
 
 
 export async function loginWithGoogleAction(
-  googleId: string,
-  email: string,
-  username: string,
-  avatarUrl?: string
+  googleData: GoogleAuthValues
 ): Promise<{ user: User | null; error: string | null; needsProfileCompletion?: boolean }> {
-  // console.log('Attempting Google login for ID:', googleId);
-  const existingUser = usersInServerMemoryDb.find(u => u.id === googleId);
+  // LIMITACIÓN DE LA API:
+  // La API actual no tiene un endpoint para buscar/obtener un usuario por googleId o email.
+  // Solo se puede obtener un usuario por el ID que el backend genera (GET /api/usuarios/{id}).
+  // Por lo tanto, este "login" no puede verificar si el usuario ya existe en el backend
+  // basándose únicamente en el googleId.
+  //
+  // Flujo actual:
+  // 1. Siempre se asume que el usuario podría ser nuevo o necesitar completar el perfil.
+  // 2. Se devuelven los datos de Google para que el frontend inicie el "paso 2" del registro.
+  // 3. Si el usuario ya existe (detectado por el backend durante el `registerUserAction` por email/teléfono único),
+  //    el backend debería devolver un error en ese punto, o manejar la situación de "ya existe".
 
-  if (existingUser) {
-    // console.log('User found in DB:', existingUser);
-    // Optionally update avatar/email/username if they changed in Google, for consistency
-    existingUser.email = email; // Ensure email from Google is current
-    existingUser.username = username; // Ensure username from Google is current
-    if (avatarUrl) existingUser.avatarUrl = avatarUrl;
-    return { user: existingUser, error: null };
-  } else {
-    // User signed in with Google but is not in our DB yet.
-    // This means they need to complete the profile.
-    // We return a partial user object that the client can use to prefill the "complete profile" form.
-    // console.log('User not in DB, needs profile completion. Google Data:', { googleId, email, username, avatarUrl });
-    const partialUser: User = { // This is a temporary structure to pass data to the registration form
-      id: googleId,
-      email,
-      username,
-      avatarUrl,
-      phone: '', // to be filled by user
-      clashTag: '', // to be filled by user
-      nequiAccount: '', // to be filled by user (will be phone)
+  // console.log('loginWithGoogleAction: Intentando simular login/registro para googleId:', googleData.googleId);
+
+  // Devolvemos los datos de Google para que el frontend proceda a completar el perfil.
+  // El `registerUserAction` se encargará de la creación real en el backend.
+  const partialUserForProfileCompletion: User = {
+      id: '', // El ID real vendrá del backend después del registro completo
+      googleId: googleData.googleId,
+      username: googleData.username,
+      email: googleData.email,
+      avatarUrl: googleData.avatarUrl,
+      phone: '',
+      clashTag: '',
+      nequiAccount: '',
       balance: 0,
-      friendLink: '', // to be filled by user
+      friendLink: '',
       reputacion: 0,
-    };
-    return { user: partialUser, error: null, needsProfileCompletion: true };
-  }
+  };
+  return { user: partialUserForProfileCompletion, error: null, needsProfileCompletion: true };
 }
 
 export async function getUserDataAction(userId: string): Promise<{ user: User | null; error: string | null }> {
-  // userId here is expected to be the googleId
-  // console.log('Getting user data for ID (googleId):', userId);
-  const user = usersInServerMemoryDb.find(u => u.id === userId);
-  if (user) {
-    // console.log('User found for getUserDataAction:', user);
-    return { user, error: null };
+  // userId aquí es el ID generado por el backend (UUID)
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/usuarios/${userId}`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { user: null, error: 'Usuario no encontrado en el backend.' };
+      }
+      const errorData = await response.json().catch(() => ({ message: `Error del servidor: ${response.status}` }));
+      return { user: null, error: errorData.message || `Error ${response.status} al obtener datos del usuario.` };
+    }
+    const backendUser = await response.json() as BackendUsuarioDto;
+
+    if (!backendUser.id) {
+        // Esto no debería pasar si el backend devuelve un usuario válido con ID
+        return { user: null, error: "El backend devolvió datos de usuario incompletos (sin ID)." };
+    }
+
+    const appUser: User = {
+      id: backendUser.id, // ID del backend
+      // googleId: ?? Si no lo guardamos en el backend, no podemos recuperarlo aquí directamente.
+      // Se podría guardar en localStorage junto con el id del backend tras el registro.
+      username: backendUser.nombre,
+      email: backendUser.email,
+      phone: backendUser.telefono,
+      clashTag: backendUser.tagClash,
+      nequiAccount: backendUser.telefono,
+      balance: backendUser.saldo ?? 0,
+      friendLink: backendUser.linkAmistad,
+      avatarUrl: `https://placehold.co/100x100.png?text=${backendUser.nombre[0]?.toUpperCase() || 'U'}`, // Considerar si el avatar se guarda/devuelve
+      reputacion: backendUser.reputacion ?? 0,
+    };
+    return { user: appUser, error: null };
+
+  } catch (error: any) {
+    console.error("Error en getUserDataAction:", error);
+    return { user: null, error: error.message || "Ocurrió un error de red al obtener datos del usuario." };
   }
-  // console.log('User not found for getUserDataAction. Current DB:', usersInServerMemoryDb.map(u => ({id: u.id, username: u.username})));
-  return { user: null, error: 'Usuario no encontrado en la base de datos en memoria.' };
 }
 
+// LIMITACIÓN DE LA API: No hay endpoint para actualizar el perfil del usuario.
+// Esta función seguirá usando la base de datos en memoria para simular la actualización.
 export async function updateUserProfileInMemoryAction(
-  userId: string, // This is googleId
+  userId: string, // Este es el ID del backend
   updatedData: Partial<User>
 ): Promise<{ user: User | null; error: string | null }> {
+  
+  console.warn("updateUserProfileInMemoryAction: La API actual no permite actualizar perfiles de usuario en el backend. Esta actualización es solo local (en memoria del AuthContext).");
+
+  // Intentamos encontrar y actualizar en la BD en memoria si el usuario existe allí (improbable si todo es vía backend)
   const userIndex = usersInServerMemoryDb.findIndex(u => u.id === userId);
 
-  if (userIndex === -1) {
-    return { user: null, error: 'Usuario no encontrado para actualizar.' };
-  }
-
-  const currentUserState = usersInServerMemoryDb[userIndex];
-  
-  // Create the new user data object by merging current state with updates
-  const newUserData: User = {
-    ...currentUserState,
-    ...updatedData,
-  };
-
-  // If nequiAccount is updated in formData, it means the phone number for Nequi changed.
-  // We assume phone and nequiAccount are the same in this app's logic.
-  if (updatedData.nequiAccount) {
-    newUserData.phone = updatedData.nequiAccount;
-  }
-  // If (for some reason) 'phone' was part of updatedData directly
-  if (updatedData.phone) {
-    newUserData.nequiAccount = updatedData.phone;
+  if (userIndex !== -1) {
+    usersInServerMemoryDb[userIndex] = { ...usersInServerMemoryDb[userIndex], ...updatedData };
+    if (updatedData.nequiAccount) usersInServerMemoryDb[userIndex].phone = updatedData.nequiAccount;
+    if (updatedData.phone) usersInServerMemoryDb[userIndex].nequiAccount = updatedData.phone;
+    return { user: usersInServerMemoryDb[userIndex], error: null };
   }
   
-  usersInServerMemoryDb[userIndex] = newUserData;
-
-  // console.log('User profile updated in-memory:', usersInServerMemoryDb[userIndex]);
-  return { user: usersInServerMemoryDb[userIndex], error: null };
+  // Si no está en la BD en memoria, no podemos hacer mucho más que devolver un error o los datos sin cambios.
+  // Lo ideal sería que el AuthContext maneje la actualización optimista y el refreshUser obtenga los datos del backend.
+  // Como el backend no actualiza, esta función es principalmente para la simulación.
+  return { user: null, error: 'Usuario no encontrado en la base de datos en memoria para actualizar (esta función es simulada).' };
 }
 
 
-// --- Placeholder/Future Backend-connected Actions (currently not fully used) ---
-
-// Example of how a backend call might look (not used by current in-memory logic)
-async function registerUserWithBackend(backendPayload: BackendUsuarioDto): Promise<any> {
-  const response = await fetch(`${BACKEND_URL}/api/usuarios/registro`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(backendPayload),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Error en el registro con backend.' }));
-    throw new Error(errorData.message || `Error ${response.status}`);
-  }
-  return response.json();
-}
-
+// --- Acciones de Transacciones, Apuestas, Partidas (A implementar con backend) ---
 
 export async function requestTransactionAction(
-  userId: string,
+  userId: string, // Backend User ID
   amount: number,
   type: "DEPOSITO" | "RETIRO"
 ): Promise<{ transaction: BackendTransaccionResponseDto | null; error: string | null }> {
-  return {
-    transaction: {
-      id: `trans_${Date.now()}`,
-      usuarioId: userId,
-      monto: amount,
-      tipo: type, //
-      estado: 'PENDIENTE',
-      creadoEn: new Date().toISOString()
-    },
-    error: null
+  const payload: BackendTransaccionRequestDto = {
+    usuarioId: userId,
+    monto: amount,
+    tipo: type,
   };
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/transacciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { transaction: null, error: errorData.message || `Error ${response.status}` };
+    }
+    const transaction = await response.json();
+    return { transaction, error: null };
+  } catch (error: any) {
+    return { transaction: null, error: error.message || "Error de red" };
+  }
 }
 
 export async function createBetAction(
-  userId: string,
+  userId: string, // Backend User ID
   amount: number,
   gameMode: string
 ): Promise<{ bet: BackendApuestaResponseDto | null; error: string | null }> {
-  // This function would call the backend. For now, it's a placeholder.
-  // console.log(`Simulating bet creation for user ${userId}: ${gameMode} ${amount}`);
-  // For prototype, return a mock success
-  return { bet: { id: `bet_${Date.now()}`, monto: amount, modoJuego: gameMode, estado: 'PENDIENTE', creadoEn: new Date().toISOString(), jugador1Id: userId }, error: null };
+  const payload: BackendApuestaRequestDto = {
+    jugador1Id: userId,
+    monto: amount,
+    modoJuego: gameMode,
+  };
+   try {
+    const response = await fetch(`${BACKEND_URL}/api/apuestas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { bet: null, error: errorData.message || `Error ${response.status}` };
+    }
+    const bet = await response.json();
+    return { bet, error: null };
+  } catch (error: any) {
+    return { bet: null, error: error.message || "Error de red" };
+  }
 }
 
 export async function getUserTransactionsAction(
-  userId: string
+  userId: string // Backend User ID
 ): Promise<{ transactions: BackendTransaccionResponseDto[] | null; error: string | null }> {
-  // This function would call the backend. For now, it's a placeholder.
-  // console.log(`Simulating fetching transactions for user ${userId}`);
-  // For prototype, return empty array
-  return { transactions: [], error: null };
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/transacciones/usuario/${userId}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { transactions: null, error: errorData.message || `Error ${response.status}` };
+    }
+    const transactions = await response.json();
+    return { transactions, error: null };
+  } catch (error: any) {
+    return { transactions: null, error: error.message || "Error de red" };
+  }
 }

@@ -1,26 +1,25 @@
 
 // Tipos del Backend (basados en OpenAPI)
-
 export interface BackendUsuarioDto {
-  id?: string; // Este será el googleId cuando se comunique con el backend
-  nombre: string; // Este es el 'username' de Google
+  id?: string; // UUID generado por el backend, presente en respuestas
+  nombre: string;
   email: string;
   telefono: string; // Pattern: ^\\+?\\d{7,15}$
   tagClash: string; // Pattern: ^#?[A-Z0-9]{5,12}$
   linkAmistad?: string; // Pattern: ^(https://link\.clashroyale\.com/invite/friend\\?tag=[A-Z0-9]+)?$
   saldo?: number; // minimum: 0.0
-  reputacion?: number;
+  reputacion?: number; // integer
 }
 
 export interface BackendTransaccionRequestDto {
-  usuarioId: string; // UUID (será el googleId)
+  usuarioId: string; // UUID del usuario del backend
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
 }
 
 export interface BackendTransaccionResponseDto {
   id: string; // UUID de la transacción
-  usuarioId: string; // UUID (googleId)
+  usuarioId: string; // UUID del usuario del backend
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
   estado: "PENDIENTE" | "APROBADA" | "RECHAZADA";
@@ -28,16 +27,16 @@ export interface BackendTransaccionResponseDto {
 }
 
 export interface BackendApuestaRequestDto {
-  jugador1Id: string; // UUID (googleId)
-  jugador2Id?: string; // UUID (googleId - opcional si es una apuesta abierta)
+  jugador1Id: string; // UUID del usuario del backend
+  jugador2Id?: string; // UUID del usuario del backend (opcional)
   monto: number;
   modoJuego: string;
 }
 
 export interface BackendApuestaResponseDto {
   id: string; // UUID de la apuesta
-  jugador1Id?: string; // Añadido para consistencia
-  jugador2Id?: string; // Añadido para consistencia
+  jugador1Id?: string;
+  jugador2Id?: string;
   monto: number;
   modoJuego: string;
   estado: "PENDIENTE" | "EMPAREJADA" | "EN_PROGRESO" | "FINALIZADA" | "CANCELADA";
@@ -46,14 +45,14 @@ export interface BackendApuestaResponseDto {
 
 export interface BackendPartidaRequestDto {
   apuestaId: string; // UUID de la apuesta
-  ganadorId: string; // UUID (googleId)
+  ganadorId: string; // UUID del usuario del backend
   resultadoJson?: string;
 }
 
 export interface BackendPartidaResponseDto {
   id: string; // UUID de la partida
   apuestaId: string; // UUID de la apuesta
-  ganadorId?: string; // UUID (googleId)
+  ganadorId?: string; // UUID del usuario del backend
   validada: boolean;
   validadaEn?: string; // date-time
 }
@@ -69,10 +68,11 @@ export interface BackendMatchResultDto {
 // Tipos de la Aplicación Frontend
 
 export interface User {
-  id: string; // Representa el googleId
-  username: string; // Mapeado desde 'nombre' de Google/backend, o elegido por el usuario
+  id: string; // Representa el ID del usuario generado por el BACKEND (UUID)
+  googleId?: string; // ID de Google, guardado para referencia.
+  username: string; // Mapeado desde 'nombre' del backend
   email: string;
-  phone: string; 
+  phone: string;
   clashTag: string; // Con #, ej: #P0LYGJU
   nequiAccount: string; // Probablemente el mismo que 'phone'
   avatarUrl?: string;
@@ -83,41 +83,41 @@ export interface User {
 
 // Para el formulario de completar perfil después del login con Google
 export interface CompleteProfileFormValues {
-  username: string;
+  username: string; // Este es el 'nombre' que el usuario confirma/elige
   phone: string;
   friendLink: string;
 }
 
-// Valores para el proceso de login/registro con Google
+// Valores obtenidos de la simulación de Google Auth
 export interface GoogleAuthValues {
   googleId: string;
   email: string;
-  username: string; // 'nombre' de Google
+  username: string; // 'nombre' de Google, usado para pre-llenar
   avatarUrl?: string;
 }
 
-// Datos completos para registrarse usando Google y completando el perfil
-export type RegisterWithGoogleData = {
-  googleId: string;
-  email: string; // Email de Google (no editable por el usuario en este flujo)
+// Datos completos para registrarse: combina GoogleAuthValues y CompleteProfileFormValues
+export type RegisterData = {
+  googleId: string; // Necesario para asociar con el usuario de Google
+  email: string; // Email de Google
   username: string; // Username elegido/confirmado por el usuario
   avatarUrl?: string; // Avatar de Google (o default)
   phone: string;
   friendLink: string;
-  clashTag: string; // Derivado del friendLink en el cliente antes de llamar al action
+  clashTag: string; // Derivado del friendLink
 };
-    
+
 
 export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';
 export type MatchResult = 'win' | 'loss' | 'draw';
 
 export interface Bet {
   id: string;
-  userId: string; // googleId
+  userId: string; // ID del usuario del backend
   matchId?: string;
   amount: number;
   opponentTag?: string;
-  opponentId?: string; // googleId del oponente
+  opponentId?: string; // ID del oponente del backend
   matchDate: string;
   result?: MatchResult;
   status: BackendApuestaResponseDto['estado'];
@@ -128,10 +128,8 @@ export interface Bet {
 export interface ChatMessage {
   id: string;
   matchId: string;
-  senderId: string; // googleId o 'system'
+  senderId: string; // ID del usuario del backend o 'system'
   text: string;
   timestamp: string;
   isSystemMessage?: boolean;
 }
-    
-
