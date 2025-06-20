@@ -129,8 +129,7 @@ export async function getUserDataAction(userId: string): Promise<{ user: User | 
     };
     return { user: appUser, error: null };
 
-  } catch (error: any)
-{
+  } catch (error: any) {
     console.error("Error en getUserDataAction:", error);
     return { user: null, error: error.message || "Ocurrió un error de red al obtener datos del usuario." };
   }
