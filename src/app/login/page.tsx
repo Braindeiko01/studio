@@ -18,6 +18,7 @@ import { CrownIcon, LoginIcon, PhoneIcon } from '@/components/icons/ClashRoyaleI
 import { LockKeyholeIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { loginUserAction } from '@/lib/actions';
+import type { LoginFormValues } from '@/types';
 
 
 const loginSchema = z.object({
@@ -25,7 +26,7 @@ const loginSchema = z.object({
   password: z.string().min(1, "La contraseña es requerida"),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+// type LoginFormValues = z.infer<typeof loginSchema>; // Ya está en types/index.ts
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function LoginPage() {
   const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     setIsLoading(true);
     
-    const result = await loginUserAction(data);
+    const result = await loginUserAction(data); // loginUserAction ahora es principalmente para el usuario Demo
 
     if (result.user) {
       auth.login(result.user); 
@@ -63,7 +64,7 @@ export default function LoginPage() {
     } else if (result.error) {
       toast({
         title: "Error de Inicio de Sesión",
-        description: result.error,
+        description: result.error, // El error ahora indicará la limitación del login
         variant: "destructive",
       });
     }
@@ -77,7 +78,7 @@ export default function LoginPage() {
           <CrownIcon className="mx-auto h-16 w-16 text-primary mb-4" />
           <CardTitle className="text-4xl font-headline text-primary">CR Duels</CardTitle>
           <CardDescription className="text-muted-foreground text-base">
-            Ingresa tu número de teléfono y contraseña para unirte a la batalla!
+            Ingresa tu número de teléfono y contraseña.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,6 +131,9 @@ export default function LoginPage() {
               </CartoonButton>
             </form>
           </Form>
+           <p className="text-xs text-muted-foreground mt-4 text-center">
+            Nota: El inicio de sesión completo solo está disponible para el usuario de demostración (tel: 0000000, pass: 0000) debido a las limitaciones de la API actual. Los usuarios nuevos deben registrarse.
+          </p>
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-2">
           <p className="text-sm text-muted-foreground">

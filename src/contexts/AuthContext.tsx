@@ -3,8 +3,8 @@
 
 import type { User } from '@/types';
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-// Importaciones de localStorage eliminadas
 import { useRouter } from 'next/navigation';
+import { getUserDataAction } from '@/lib/actions'; // Para intentar cargar datos del usuario si hay un ID guardado
 
 interface AuthContextType {
   user: User | null;
@@ -12,13 +12,12 @@ interface AuthContextType {
   isLoading: boolean;
   login: (userData: User) => void;
   logout: () => void;
-  updateUser: (updatedData: Partial<User>) => void; // Aún actualiza solo estado local
-  depositBalance: (amount: number) => void; // Aún actualiza solo estado local
+  updateUser: (updatedData: Partial<User>) => void; 
+  refreshUser: () => Promise<void>; // Para actualizar datos del usuario desde el backend
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Llave de localStorage eliminada
+const USER_ID_STORAGE_KEY = 'cr_duels_user_id'; // Guardaremos solo el ID del usuario
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -32,50 +31,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (hasMounted) {
-      // Ya no se carga el usuario desde localStorage
-      setIsLoading(false); 
+      const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY);
+      if (storedUserId) {
+        // Intenta cargar los datos completos del usuario desde el backend usando el ID
+        getUserDataAction(storedUserId)
+          .then(result => {
+            if (result.user) {
+              setUser(result.user);
+            } else {
+              // Si no se encuentra el usuario o hay error, limpiar el ID guardado
+              localStorage.removeItem(USER_ID_STORAGE_KEY);
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching user data on mount:", error);
+            localStorage.removeItem(USER_ID_STORAGE_KEY);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else {
+        setIsLoading(false); 
+      }
     }
   }, [hasMounted]);
 
   const login = (userData: User) => {
     setUser(userData);
-    // Ya no se guarda en localStorage
+    if (userData.id) {
+        localStorage.setItem(USER_ID_STORAGE_KEY, userData.id);
+    }
   };
 
   const logout = () => {
     setUser(null);
-    // Ya no se elimina de localStorage
-    router.push('/login');
+    localStorage.removeItem(USER_ID_STORAGE_KEY);
+    router.push('/login'); // Redirige al login
   };
   
   const updateUser = (updatedData: Partial<User>) => {
-    // Esta función actualmente solo actualiza el estado del cliente.
-    // Para persistir en el servidor, necesitaría llamar a un Server Action.
+    // Esta función actualiza el estado local.
+    // Para persistir en el servidor, el componente que llama a esto debería
+    // invocar un Server Action y luego llamar a updateUser o refreshUser.
     if (user) {
       const newUser = { ...user, ...updatedData };
       setUser(newUser);
-      // Ya no se guarda en localStorage
     }
   };
 
-  const depositBalance = (amount: number) => {
-    // Esta función actualmente solo actualiza el estado del cliente.
-    // Para persistir en el servidor, necesitaría llamar a un Server Action.
-    if (user && amount > 0) {
-      const newBalance = user.balance + amount;
-      const updatedUser = { ...user, balance: newBalance };
-      setUser(updatedUser);
-      // Ya no se guarda en localStorage
+  const refreshUser = async () => {
+    if (user?.id) {
+      setIsLoading(true);
+      try {
+        const result = await getUserDataAction(user.id);
+        if (result.user) {
+          setUser(result.user);
+        } else if (result.error) {
+          console.error("Error refreshing user:", result.error);
+          // Podrías decidir desloguear al usuario si hay un error crítico
+          // logout(); 
+        }
+      } catch (error) {
+        console.error("Failed to refresh user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
+
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, updateUser, depositBalance }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Hook useAuth no necesita cambios
 export const useAuth = () => {
   const context = React.useContext(AuthContext);
   if (context === undefined) {
