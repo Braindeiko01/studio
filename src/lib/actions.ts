@@ -167,26 +167,17 @@ export async function requestTransactionAction(
   amount: number,
   type: "DEPOSITO" | "RETIRO"
 ): Promise<{ transaction: BackendTransaccionResponseDto | null; error: string | null }> {
-  // This function would call the backend. For now, it's a placeholder.
-  // console.log(`Simulating transaction request for user ${userId}: ${type} ${amount}`);
-  // In a real scenario:
-  /*
-  try {
-    const payload: BackendTransaccionRequestDto = { usuarioId: userId, monto: amount, tipo };
-    const response = await fetch(`${BACKEND_URL}/api/transacciones`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) { /* ... error handling ... * / }
-    const transaction: BackendTransaccionResponseDto = await response.json();
-    return { transaction, error: null };
-  } catch (e: any) {
-    return { transaction: null, error: e.message || 'Error al procesar transacción.' };
-  }
-  */
-  // For prototype, return a mock success or handle in client state
-  return { transaction: { id: `trans_${Date.now()}`, usuarioId: userId, monto: amount, tipo, estado: 'PENDIENTE', creadoEn: new Date().toISOString() }, error: null };
+  return {
+    transaction: {
+      id: `trans_${Date.now()}`,
+      usuarioId: userId,
+      monto: amount,
+      tipo: type, // ✅ CORREGIDO: antes estaba mal como `tipo,`
+      estado: 'PENDIENTE',
+      creadoEn: new Date().toISOString()
+    },
+    error: null
+  };
 }
 
 export async function createBetAction(
