@@ -18,18 +18,22 @@ import type {
 // URL del Backend. Se usa la variable de entorno o la URL de producción de Railway por defecto.
 const BACKEND_URL = process.env.BACKEND_API_URL || 'https://crduels-crduelsproduction.up.railway.app';
 
+// Simulación de base de datos en memoria del servidor (para el flujo original, se deja por si se reactiva)
+// let usersInServerMemoryDb: User[] = [];
+
 export async function registerUserAction(
   data: RegisterWithGoogleData
 ): Promise<{ user: User | null; error: string | null }> {
   
-  // El DTO del backend para el registro no incluye un campo 'id'.
-  // El backend generará su propio ID (UUID).
-  const backendPayload: Omit<BackendUsuarioDto, 'id' | 'saldo' | 'reputacion' | 'linkAmistad'> & { linkAmistad?: string } = {
+  // El DTO del backend para el registro ahora incluirá 'id' como el googleId.
+  const backendPayload: BackendUsuarioDto = {
+    id: data.googleId, // Se envía el googleId como el 'id' del usuario
     nombre: data.username,
     email: data.email,
     telefono: data.phone,
     tagClash: data.clashTag,
     linkAmistad: data.friendLink,
+    // saldo y reputacion los inicializa el backend
   };
 
   try {
@@ -49,18 +53,18 @@ export async function registerUserAction(
 
     const registeredBackendUser = await response.json() as BackendUsuarioDto;
 
+    // Asumimos que el backend devuelve el mismo 'id' (googleId) que se envió.
     if (!registeredBackendUser.id) {
         return { user: null, error: "El backend no devolvió un ID para el usuario registrado." };
     }
 
     const appUser: User = {
-      id: data.googleId, // El ID del frontend es el googleId
-      backendId: registeredBackendUser.id, // El ID generado por el backend
+      id: registeredBackendUser.id, // Este ES el googleId
       username: registeredBackendUser.nombre,
       email: registeredBackendUser.email,
       phone: registeredBackendUser.telefono,
       clashTag: registeredBackendUser.tagClash,
-      nequiAccount: registeredBackendUser.telefono,
+      nequiAccount: registeredBackendUser.telefono, // Asumimos que Nequi es el mismo teléfono
       balance: registeredBackendUser.saldo ?? 0,
       friendLink: registeredBackendUser.linkAmistad || '',
       avatarUrl: data.avatarUrl || `https://placehold.co/100x100.png?text=${registeredBackendUser.nombre[0]?.toUpperCase() || 'U'}`,
@@ -78,30 +82,35 @@ export async function registerUserAction(
 
 export async function loginWithGoogleAction(
   googleAuthData: GoogleAuthValues
-): Promise<{ user: Partial<User> | null; error: string | null; needsProfileCompletion?: boolean }> {
-  // Este action ahora principalmente prepara datos para el flujo de registro si el usuario es nuevo,
-  // o devuelve los datos de Google para que AuthContext intente cargar la sesión completa.
-  // La API actual no permite buscar/loguear un usuario por googleId directamente en el backend.
+): Promise<{ user: User | null; error: string | null; needsProfileCompletion?: boolean }> {
   
-  const partialUserForFrontend: Partial<User> = {
-      id: googleAuthData.googleId, // User.id es googleId
-      username: googleAuthData.username,
-      email: googleAuthData.email,
-      avatarUrl: googleAuthData.avatarUrl,
-      // backendId, phone, clashTag, etc., se obtendrán después del registro completo o al cargar sesión.
-  };
-  // Siempre se necesitará completar perfil o cargar datos si ya está registrado.
-  // AuthContext se encargará de llamar a getUserDataAction si hay un backendId en localStorage.
-  return { user: partialUserForFrontend, error: null, needsProfileCompletion: true };
+  // Intenta obtener el usuario del backend usando el googleId
+  const existingUserResult = await getUserDataAction(googleAuthData.googleId);
+
+  if (existingUserResult.user) {
+    // El usuario ya existe en el backend
+    return { user: existingUserResult.user, error: null, needsProfileCompletion: false };
+  } else {
+    // El usuario no existe en el backend (o hubo un error al obtenerlo que no sea 404).
+    // Se asume que es un nuevo usuario y necesita completar el perfil.
+    // Preparamos datos parciales para el formulario de completar perfil.
+    const partialUserForFrontend: Partial<User> = {
+        id: googleAuthData.googleId,
+        username: googleAuthData.username,
+        email: googleAuthData.email,
+        avatarUrl: googleAuthData.avatarUrl,
+    };
+    return { user: partialUserForFrontend, error: null, needsProfileCompletion: true };
+  }
 }
 
-// El parámetro `backendUuid` aquí es el ID generado por el backend (UUID)
-export async function getUserDataAction(backendUuid: string): Promise<{ user: User | null; error: string | null }> {
-  if (!backendUuid) {
-    return { user: null, error: 'Se requiere el ID del backend para obtener datos del usuario.' };
+// El parámetro `userId` aquí es el `googleId`
+export async function getUserDataAction(userId: string): Promise<{ user: User | null; error: string | null }> {
+  if (!userId) {
+    return { user: null, error: 'Se requiere el googleId para obtener datos del usuario.' };
   }
   try {
-    const response = await fetch(`${BACKEND_URL}/api/usuarios/${backendUuid}`);
+    const response = await fetch(`${BACKEND_URL}/api/usuarios/${userId}`); // {id} es googleId
     if (!response.ok) {
       if (response.status === 404) {
         return { user: null, error: 'Usuario no encontrado en el backend.' };
@@ -111,16 +120,13 @@ export async function getUserDataAction(backendUuid: string): Promise<{ user: Us
     }
     const backendUser = await response.json() as BackendUsuarioDto;
 
+    // Asumimos que backendUser.id es el googleId
     if (!backendUser.id) {
         return { user: null, error: "El backend devolvió datos de usuario incompletos (sin ID)." };
     }
 
-    // Nota: `backendUser.id` es el UUID del backend.
-    // El `googleId` (que será `User.id` en el frontend) debe ser proporcionado por el AuthContext
-    // al reconstruir el objeto User completo después de esta llamada.
     const appUser: User = {
-      id: '', // Este se llenará con el googleId desde AuthContext o la sesión
-      backendId: backendUser.id,
+      id: backendUser.id, // Este es el googleId
       username: backendUser.nombre,
       email: backendUser.email,
       phone: backendUser.telefono,
@@ -128,39 +134,42 @@ export async function getUserDataAction(backendUuid: string): Promise<{ user: Us
       nequiAccount: backendUser.telefono,
       balance: backendUser.saldo ?? 0,
       friendLink: backendUser.linkAmistad || '',
+      // Asumimos que el avatarUrl lo gestiona el frontend o se podría añadir al BackendUsuarioDto si el backend lo gestionara
       avatarUrl: `https://placehold.co/100x100.png?text=${backendUser.nombre[0]?.toUpperCase() || 'U'}`,
       reputacion: backendUser.reputacion ?? 0,
     };
     return { user: appUser, error: null };
 
-  } catch (error: any) {
+  } catch (error: any)
+{
     console.error("Error en getUserDataAction:", error);
     return { user: null, error: error.message || "Ocurrió un error de red al obtener datos del usuario." };
   }
 }
 
-// `userId` aquí es el `googleId`. La actualización del perfil en backend no está implementada.
+// userId aquí es el googleId.
+// IMPORTANTE: Esta función sigue siendo solo para simulación en memoria del frontend,
+// ya que la API de OpenAPI NO tiene un endpoint PUT /api/usuarios/{id} para actualizar.
+// Si tu backend ya tiene este endpoint, se necesitaría su definición para integrarlo.
 export async function updateUserProfileInMemoryAction(
   userId: string, // Este es el googleId (User.id del frontend)
   updatedData: Partial<User>
 ): Promise<{ user: User | null; error: string | null }> {
-  // Esta función sigue siendo solo para simulación en memoria del frontend,
-  // ya que la API no tiene un endpoint PUT /api/usuarios/{backend_uuid}
-  console.warn("updateUserProfileInMemoryAction: Actualización de perfil simulada. Los cambios NO se guardan en el backend debido a la falta de un endpoint en la API.");
-  
-  // Se asume que AuthContext maneja la actualización optimista de su estado 'user'.
-  // Esta función devuelve los datos actualizados para mantener la consistencia si AuthContext la llama.
+  console.warn("updateUserProfileInMemoryAction: Actualización de perfil simulada en frontend. Los cambios NO se guardan en el backend debido a la falta de un endpoint en la API proporcionada.");
+  // Esta función es llamada por AuthContext para actualizar el estado local.
+  // En un escenario real con endpoint de backend, aquí se haría la llamada PUT.
+  // Por ahora, solo devolvemos los datos actualizados como si la operación hubiera sido exitosa.
   return { user: updatedData as User, error: null }; 
 }
 
 
 export async function requestTransactionAction(
-  userBackendId: string, // Se necesita el Backend User ID (UUID)
+  userGoogleId: string,
   amount: number,
   type: "DEPOSITO" | "RETIRO"
 ): Promise<{ transaction: BackendTransaccionResponseDto | null; error: string | null }> {
   const payload: BackendTransaccionRequestDto = {
-    usuarioId: userBackendId,
+    usuarioId: userGoogleId, // Se usa googleId
     monto: amount,
     tipo: type,
   };
@@ -183,12 +192,12 @@ export async function requestTransactionAction(
 }
 
 export async function createBetAction(
-  userBackendId: string, // Se necesita el Backend User ID (UUID)
+  userGoogleId: string,
   amount: number,
   gameMode: string
 ): Promise<{ bet: BackendApuestaResponseDto | null; error: string | null }> {
   const payload: BackendApuestaRequestDto = {
-    jugador1Id: userBackendId,
+    jugador1Id: userGoogleId, // Se usa googleId
     monto: amount,
     modoJuego: gameMode,
   };
@@ -211,10 +220,11 @@ export async function createBetAction(
 }
 
 export async function getUserTransactionsAction(
-  userBackendId: string // Se necesita el Backend User ID (UUID)
+  userGoogleId: string
 ): Promise<{ transactions: BackendTransaccionResponseDto[] | null; error: string | null }> {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/transacciones/usuario/${userBackendId}`);
+    // Asumimos que el endpoint /api/transacciones/usuario/{id} espera el googleId
+    const response = await fetch(`${BACKEND_URL}/api/transacciones/usuario/${userGoogleId}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: `Error del servidor: ${response.status}` }));
       return { transactions: null, error: errorData.message || `Error ${response.status} al obtener transacciones.` };

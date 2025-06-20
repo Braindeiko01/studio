@@ -35,8 +35,8 @@ const HomePageContent = () => {
   }
 
   const handleFindMatch = (mode: 'classic' | 'triple-draft') => {
-    if (!user.backendId) {
-      toast({ title: "Error de Usuario", description: "Falta el ID de backend del usuario.", variant: "destructive" });
+    if (!user.id) { // user.id es googleId
+      toast({ title: "Error de Usuario", description: "Falta el ID de usuario.", variant: "destructive" });
       return;
     }
     if (user.balance < 6000) {
@@ -62,8 +62,8 @@ const HomePageContent = () => {
   };
 
   const handleDepositConfirm = async () => {
-    if (!user || !user.backendId) {
-      toast({ title: "Error", description: "Usuario no identificado para el backend.", variant: "destructive" });
+    if (!user || !user.id) { // user.id es googleId
+      toast({ title: "Error", description: "Usuario no identificado.", variant: "destructive" });
       return;
     }
     const amount = parseFloat(depositAmount);
@@ -85,7 +85,7 @@ const HomePageContent = () => {
     // requestTransactionAction actualmente no maneja la subida de archivos.
     // Esto es una simplificación; en una app real, subirías el archivo a un storage
     // y pasarías la URL del archivo al backend, o el backend tendría un endpoint para multipart/form-data.
-    const result = await requestTransactionAction(user.backendId, amount, "DEPOSITO");
+    const result = await requestTransactionAction(user.id, amount, "DEPOSITO"); // user.id es googleId
     setIsDepositLoading(false);
 
     if (result.transaction) {
@@ -126,8 +126,8 @@ const HomePageContent = () => {
   };
 
   const handleWithdrawConfirm = async () => {
-    if (!user || !user.backendId) {
-      toast({ title: "Error", description: "Usuario no identificado para el backend.", variant: "destructive" });
+    if (!user || !user.id) { // user.id es googleId
+      toast({ title: "Error", description: "Usuario no identificado.", variant: "destructive" });
       return;
     }
     const amount = parseFloat(withdrawAmount);
@@ -141,7 +141,7 @@ const HomePageContent = () => {
     }
     
     setIsWithdrawLoading(true);
-    const result = await requestTransactionAction(user.backendId, amount, "RETIRO");
+    const result = await requestTransactionAction(user.id, amount, "RETIRO"); // user.id es googleId
     setIsWithdrawLoading(false);
 
     if (result.transaction) {

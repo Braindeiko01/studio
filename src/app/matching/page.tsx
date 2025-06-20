@@ -14,11 +14,11 @@ import { createBetAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 
 
-// Mock opponent data - opponent's backendId (UUID) would be used if joining their bet
+// Mock opponent data - opponent's googleId would be used if joining their bet
 const mockOpponents = [
-  { backendId: 'opp1-backend-uuid', clashTag: 'DuelKing#123', avatarUrl: 'https://placehold.co/128x128.png?text=DK', dataAiHint: 'gaming avatar king' },
-  { backendId: 'opp2-backend-uuid', clashTag: 'ArenaPro#456', avatarUrl: 'https://placehold.co/128x128.png?text=AP', dataAiHint: 'gaming avatar pro' },
-  { backendId: 'opp3-backend-uuid', clashTag: 'Legend#789', avatarUrl: 'https://placehold.co/128x128.png?text=L', dataAiHint: 'gaming avatar legend' },
+  { id: 'google-opp1-id', clashTag: 'DuelKing#123', avatarUrl: 'https://placehold.co/128x128.png?text=DK', dataAiHint: 'gaming avatar king' },
+  { id: 'google-opp2-id', clashTag: 'ArenaPro#456', avatarUrl: 'https://placehold.co/128x128.png?text=AP', dataAiHint: 'gaming avatar pro' },
+  { id: 'google-opp3-id', clashTag: 'Legend#789', avatarUrl: 'https://placehold.co/128x128.png?text=L', dataAiHint: 'gaming avatar legend' },
 ];
 
 const MatchingPageContent = () => {
@@ -32,14 +32,14 @@ const MatchingPageContent = () => {
 
   const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
-  const [opponent, setOpponent] = useState<{ backendId: string; clashTag: string; avatarUrl: string; dataAiHint: string; } | null>(null);
+  const [opponent, setOpponent] = useState<{ id: string; clashTag: string; avatarUrl: string; dataAiHint: string; } | null>(null);
   const [betId, setBetId] = useState<string | null>(null); // This will be the bet's UUID from backend
 
   // Effect for setting up search and progress
   useEffect(() => {
-    if (!user || !user.backendId) { 
-      if (user && !user.backendId) { // User is partially loaded but no backendId
-        toast({ title: "Error de Usuario", description: "No se pudo identificar al usuario en el backend. Intenta recargar.", variant: "destructive"});
+    if (!user || !user.id) { // user.id es googleId
+      if (user && !user.id) { 
+        toast({ title: "Error de Usuario", description: "No se pudo identificar al usuario. Intenta recargar.", variant: "destructive"});
         router.replace('/');
       }
       return;
@@ -62,8 +62,8 @@ const MatchingPageContent = () => {
     setBetId(null);
 
     const initBet = async () => {
-      if (!user.backendId) return; 
-      const result = await createBetAction(user.backendId, 6000, mode); // Use backendId
+      if (!user.id) return; 
+      const result = await createBetAction(user.id, 6000, mode); // Use user.id (googleId)
       if (result.bet && result.bet.id) {
         setBetId(result.bet.id); // Store the bet's UUID from backend
         setStatus(`Apuesta ${result.bet.id} creada. Buscando oponente para ${modeDisplay}...`);
@@ -78,8 +78,9 @@ const MatchingPageContent = () => {
           setOpponent(randomOpponent); 
           clearInterval(progressInterval); 
           setProgress(100);
-          // TODO: En un sistema real, aquí se podría llamar a un endpoint para unirse a la apuesta `betId` con `randomOpponent.backendId`
-          // o el backend manejaría el emparejamiento.
+          // TODO: En un sistema real, aquí se podría llamar a un endpoint para unir la apuesta `betId`
+          // con el `jugador2Id` siendo `randomOpponent.id` (googleId del oponente).
+          // O el backend manejaría el emparejamiento de forma automática.
         }, 5000);
 
         return () => {
@@ -103,8 +104,9 @@ const MatchingPageContent = () => {
 
         const matchStartTimeoutId = setTimeout(() => {
             setStatus(`¡Duelo iniciando con ${opponent.clashTag} (${modeDisplay})!`);
-            // El matchId para el chat ahora es el ID de la apuesta del backend (betId)
-            router.push(`/chat/${betId}?opponentTag=${encodeURIComponent(opponent.clashTag)}&opponentAvatar=${encodeURIComponent(opponent.avatarUrl)}&opponentBackendId=${encodeURIComponent(opponent.backendId)}`);
+            // El matchId para el chat ahora es el ID de la apuesta del backend (betId - UUID)
+            // Se pasa el googleId del oponente para referencia en el chat si es necesario.
+            router.push(`/chat/${betId}?opponentTag=${encodeURIComponent(opponent.clashTag)}&opponentAvatar=${encodeURIComponent(opponent.avatarUrl)}&opponentGoogleId=${encodeURIComponent(opponent.id)}`);
         }, 3000);
 
         return () => {
@@ -201,7 +203,7 @@ const MatchingPageContent = () => {
         <CardContent>
             <Progress value={progress} className="w-full h-4 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary" />
             <p className="text-sm text-muted-foreground mt-2">Monto de Apuesta: $6,000 COP</p>
-             {betId && <p className="text-xs text-muted-foreground mt-1">ID Apuesta: {betId}</p>}
+             {betId && <p className="text-xs text-muted-foreground mt-1">ID Apuesta (Backend): {betId}</p>}
         </CardContent>
       </Card>
     </div>

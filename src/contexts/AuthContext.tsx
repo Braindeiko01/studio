@@ -20,8 +20,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // USER_ID_STORAGE_KEY ahora almacenará el googleId (que es User.id en el frontend)
 const USER_ID_STORAGE_KEY = 'cr_duels_user_id'; 
-// BACKEND_ID_STORAGE_KEY almacenará el UUID generado por el backend
-const BACKEND_ID_STORAGE_KEY = 'cr_duels_backend_user_id';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -36,30 +34,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (hasMounted) {
       const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // Este es el googleId
-      const storedBackendId = localStorage.getItem(BACKEND_ID_STORAGE_KEY); // Este es el UUID del backend
 
-      if (storedUserId && storedBackendId) {
+      if (storedUserId) {
         setIsLoading(true);
-        getUserDataAction(storedBackendId) // Se llama con el ID del backend (UUID)
+        getUserDataAction(storedUserId) // Se llama con el googleId
           .then(result => {
             if (result.user) {
-              // getUserDataAction devuelve User con backendId. Le asignamos el googleId (User.id)
-              // y preservamos el avatarUrl que podría estar ya en el estado local si se actualizó recientemente.
+              // getUserDataAction devuelve User donde User.id ya es el googleId
               setUser({ 
                 ...result.user, 
-                id: storedUserId, // Asignar el googleId almacenado
-                avatarUrl: result.user.avatarUrl || user?.avatarUrl // Mantener avatar si existe
+                // Asegurar que el avatarUrl local se mantenga si el backend no lo devuelve o es el placeholder
+                avatarUrl: result.user.avatarUrl?.includes('placehold.co') && user?.avatarUrl ? user.avatarUrl : result.user.avatarUrl,
               });
             } else {
-              // Si no se encuentra el usuario en el backend (o hay error), limpiar localStorage
               localStorage.removeItem(USER_ID_STORAGE_KEY);
-              localStorage.removeItem(BACKEND_ID_STORAGE_KEY);
             }
           })
           .catch(error => {
             console.error("Error fetching user data on mount:", error);
             localStorage.removeItem(USER_ID_STORAGE_KEY);
-            localStorage.removeItem(BACKEND_ID_STORAGE_KEY);
           })
           .finally(() => {
             setIsLoading(false);
@@ -68,24 +61,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       }
     }
-  }, [hasMounted]); // Removí 'user' de las dependencias para evitar bucles si avatarUrl cambia.
+  }, [hasMounted]);
 
   const login = (userData: User) => {
     // userData.id es el googleId
-    // userData.backendId es el UUID del backend
     setUser(userData);
     if (userData.id) { 
         localStorage.setItem(USER_ID_STORAGE_KEY, userData.id);
-    }
-    if (userData.backendId) { 
-        localStorage.setItem(BACKEND_ID_STORAGE_KEY, userData.backendId);
     }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem(USER_ID_STORAGE_KEY);
-    localStorage.removeItem(BACKEND_ID_STORAGE_KEY);
     router.push('/login');
   };
   
@@ -103,7 +91,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const simulationResult = await updateUserProfileInMemoryAction(user.id, updatedData); // user.id es googleId
     
     if (simulationResult.user) {
-       // La actualización optimista ya ocurrió.
+       // La actualización optimista ya ocurrió. `setUser` se llamaría de nuevo si el backend devuelve datos diferentes.
+       // Como es simulación, el estado ya está actualizado.
        return { success: true };
     } else {
        await refreshUser(); 
@@ -113,18 +102,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshUser = async () => {
     const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // googleId
-    const storedBackendId = localStorage.getItem(BACKEND_ID_STORAGE_KEY); // backend UUID
 
-    if (storedUserId && storedBackendId) {
+    if (storedUserId) {
       setIsLoading(true);
       try {
-        const result = await getUserDataAction(storedBackendId); // Usar backendId para la llamada
+        const result = await getUserDataAction(storedUserId); // Usar googleId para la llamada
         if (result.user) {
           setUser({ 
-            ...result.user, 
-            id: storedUserId, // Asegurar que User.id (googleId) esté presente
-            backendId: storedBackendId, // Asegurar que User.backendId esté presente
-            avatarUrl: result.user.avatarUrl || user?.avatarUrl // Mantener avatar si existe
+            ...result.user,
+            // Asegurar que el avatarUrl local se mantenga si el backend no lo devuelve o es el placeholder
+            avatarUrl: result.user.avatarUrl?.includes('placehold.co') && user?.avatarUrl ? user.avatarUrl : result.user.avatarUrl,
           });
         } else if (result.error) {
           console.error("Error refreshing user:", result.error);

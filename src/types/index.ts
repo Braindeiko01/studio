@@ -1,7 +1,7 @@
 
-// Tipos del Backend (basados en OpenAPI)
+// Tipos del Backend (basados en OpenAPI y adaptados para googleId como PK)
 export interface BackendUsuarioDto {
-  id?: string; // UUID generado por el backend, presente en respuestas
+  id?: string; // Ahora representa el googleId, enviado en registro y recibido en respuestas
   nombre: string;
   email: string;
   telefono: string; // Pattern: ^\\+?\\d{7,15}$
@@ -12,14 +12,14 @@ export interface BackendUsuarioDto {
 }
 
 export interface BackendTransaccionRequestDto {
-  usuarioId: string; // UUID del usuario del backend
+  usuarioId: string; // googleId del usuario
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
 }
 
 export interface BackendTransaccionResponseDto {
-  id: string; // UUID de la transacción
-  usuarioId: string; // UUID del usuario del backend
+  id: string; // UUID de la transacción (propio del backend)
+  usuarioId: string; // googleId del usuario
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
   estado: "PENDIENTE" | "APROBADA" | "RECHAZADA";
@@ -27,16 +27,16 @@ export interface BackendTransaccionResponseDto {
 }
 
 export interface BackendApuestaRequestDto {
-  jugador1Id: string; // UUID del usuario del backend
-  jugador2Id?: string; // UUID del usuario del backend (opcional)
+  jugador1Id: string; // googleId del usuario
+  jugador2Id?: string; // googleId del usuario (opcional)
   monto: number;
   modoJuego: string;
 }
 
 export interface BackendApuestaResponseDto {
-  id: string; // UUID de la apuesta
-  jugador1Id?: string; // UUID del backend
-  jugador2Id?: string; // UUID del backend
+  id: string; // UUID de la apuesta (propio del backend)
+  jugador1Id?: string; // googleId
+  jugador2Id?: string; // googleId
   monto: number;
   modoJuego: string;
   estado: "PENDIENTE" | "EMPAREJADA" | "EN_PROGRESO" | "FINALIZADA" | "CANCELADA";
@@ -45,14 +45,14 @@ export interface BackendApuestaResponseDto {
 
 export interface BackendPartidaRequestDto {
   apuestaId: string; // UUID de la apuesta
-  ganadorId: string; // UUID del usuario del backend
+  ganadorId: string; // googleId del usuario
   resultadoJson?: string;
 }
 
 export interface BackendPartidaResponseDto {
   id: string; // UUID de la partida
   apuestaId: string; // UUID de la apuesta
-  ganadorId?: string; // UUID del usuario del backend
+  ganadorId?: string; // googleId del usuario
   validada: boolean;
   validadaEn?: string; // date-time
 }
@@ -68,13 +68,12 @@ export interface BackendMatchResultDto {
 // Tipos de la Aplicación Frontend
 
 export interface User {
-  id: string; // Representa el googleId
-  backendId?: string; // Representa el ID generado por el BACKEND (UUID), si aplica
-  username: string; // Mapeado desde 'nombre' de Google o elegido/confirmado por el usuario
+  id: string; // Representa el googleId, es el identificador principal
+  username: string;
   email: string;
   phone: string;
-  clashTag: string; // Con #, ej: #P0LYGJU
-  nequiAccount: string; // Probablemente el mismo que 'phone'
+  clashTag: string;
+  nequiAccount: string;
   avatarUrl?: string;
   balance: number;
   friendLink?: string;
@@ -92,15 +91,15 @@ export interface CompleteProfileFormValues {
 export interface GoogleAuthValues {
   googleId: string;
   email: string;
-  username: string; // 'nombre' de Google, usado para pre-llenar
+  username: string;
   avatarUrl?: string;
 }
 
 // Datos completos para registrarse: combina GoogleAuthValues y CompleteProfileFormValues
 export type RegisterWithGoogleData = {
   googleId: string;
-  email: string; // Email from Google
-  username: string; // Username from form
+  email: string;
+  username: string;
   avatarUrl?: string;
   phone: string;
   friendLink: string;
@@ -112,14 +111,12 @@ export type MatchStatus = 'pending' | 'active' | 'completed' | 'cancelled';
 export type MatchResult = 'win' | 'loss' | 'draw';
 
 export interface Bet {
-  id: string; // ID de la apuesta (del backend)
+  id: string; // ID de la apuesta (del backend, UUID)
   userId: string; // googleId del usuario
-  userBackendId?: string; // ID del usuario del backend (UUID)
   matchId?: string; // Si se mapea a una partida/chat local
   amount: number;
   opponentTag?: string;
   opponentId?: string; // googleId del oponente
-  opponentBackendId?: string; // ID del oponente del backend (UUID)
   matchDate: string;
   result?: MatchResult;
   status: BackendApuestaResponseDto['estado'];
@@ -129,7 +126,7 @@ export interface Bet {
 
 export interface ChatMessage {
   id: string;
-  matchId: string;
+  matchId: string; // Este es el ID de la apuesta del backend (UUID)
   senderId: string; // googleId del usuario o 'system'
   text: string;
   timestamp: string;

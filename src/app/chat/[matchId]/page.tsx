@@ -25,7 +25,7 @@ const ChatPageContent = () => {
   const matchId = params.matchId as string; // Este es el ID de la apuesta del backend (UUID)
   const opponentTag = searchParams.get('opponentTag') || 'Oponente';
   const opponentAvatar = searchParams.get('opponentAvatar') || `https://placehold.co/40x40.png?text=${opponentTag[0] || 'O'}`;
-  const opponentBackendId = searchParams.get('opponentBackendId'); 
+  const opponentGoogleId = searchParams.get('opponentGoogleId'); // googleId del oponente
 
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -46,7 +46,7 @@ const ChatPageContent = () => {
     if (!user || !matchId) return; // user.id es googleId
       const initialMessage: ChatMessage = {
         id: `sys-${Date.now()}`, 
-        matchId, 
+        matchId, // ID de la apuesta del backend (UUID)
         senderId: 'system', 
         text: `Chat iniciado para el duelo (Apuesta ID: ${matchId}) con ${opponentTag}. ¡Compartan sus links de amigo de Clash Royale para comenzar!`,
         timestamp: new Date().toISOString(),
@@ -66,7 +66,7 @@ const ChatPageContent = () => {
 
     const message: ChatMessage = {
       id: `${user.id}-${Date.now()}`, 
-      matchId,
+      matchId, // ID de la apuesta del backend (UUID)
       senderId: user.id, // googleId del remitente
       text: newMessage,
       timestamp: new Date().toISOString(),
@@ -92,7 +92,7 @@ const ChatPageContent = () => {
     
     const message: ChatMessage = {
       id: `sys-link-${user.id}-${Date.now()}`,
-      matchId,
+      matchId, // ID de la apuesta del backend (UUID)
       senderId: 'system',
       text: friendLinkMessage,
       timestamp: new Date().toISOString(),
@@ -105,14 +105,15 @@ const ChatPageContent = () => {
   };
 
   const handleResultSubmission = (result: 'win' | 'loss') => {
-    if (!user || !user.backendId || resultSubmitted) { // Se necesita user.backendId para enviar al backend
-        toast({ title: "Error", description: "No se puede enviar el resultado sin identificación de backend del usuario.", variant: "destructive"});
+    if (!user || !user.id || resultSubmitted) { // user.id es googleId
+        toast({ title: "Error", description: "No se puede enviar el resultado sin identificación de usuario.", variant: "destructive"});
         return;
     }
     
     // Aquí se llamaría a una acción para enviar el resultado al backend (ej. POST /api/partidas)
-    // Se necesitaría: apuestaId (que es matchId), y ganadorId (user.backendId o opponentBackendId)
-    console.log(`Resultado enviado: Usuario con backendId ${user.backendId} ${result === 'win' ? 'ganó' : 'perdió'} la apuesta ${matchId}. Oponente backendId: ${opponentBackendId}. Adjunto: ${screenshotFile?.name || 'ninguno'}`);
+    // Se necesitaría: apuestaId (que es matchId - UUID de la apuesta)
+    // y ganadorId (user.id - googleId, o opponentGoogleId)
+    console.log(`Resultado enviado: Usuario con googleId ${user.id} ${result === 'win' ? 'ganó' : 'perdió'} la apuesta ${matchId}. Oponente googleId: ${opponentGoogleId}. Adjunto: ${screenshotFile?.name || 'ninguno'}`);
     
     toast({
       title: "¡Resultado Enviado!",
@@ -128,7 +129,7 @@ const ChatPageContent = () => {
      const resultMessageText = `${userDisplayName} envió el resultado del duelo como ${result === 'win' ? 'VICTORIA' : 'DERROTA'}. ${screenshotFile ? 'Captura de pantalla proporcionada.' : 'No se proporcionó captura.'}`;
      const resultSystemMessage: ChatMessage = {
       id: `sys-result-${user.id}-${Date.now()}`, // user.id es googleId
-      matchId,
+      matchId, // ID de la apuesta del backend (UUID)
       senderId: 'system',
       text: resultMessageText,
       timestamp: new Date().toISOString(),
