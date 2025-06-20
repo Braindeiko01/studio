@@ -11,10 +11,9 @@ import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Link as LinkIconLucide, CheckCircle, XCircle, UploadCloud } from 'lucide-react'; // Renamed LinkIcon to avoid conflict
+import { Send, Link as LinkIconLucide, CheckCircle, XCircle, UploadCloud } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import type { ChatMessage, User, Bet } from '@/types';
-import { useRouter } from 'next/navigation';
+import type { ChatMessage } from '@/types'; 
 import { Label } from '@/components/ui/label';
 
 
@@ -22,12 +21,12 @@ const ChatPageContent = () => {
   const { user } = useAuth();
   const params = useParams();
   const searchParams = useSearchParams();
-  const routerNav = useRouter(); 
 
-  const matchId = params.matchId as string;
+  const matchId = params.matchId as string; // Este es el ID de la apuesta del backend (UUID)
   const opponentTag = searchParams.get('opponentTag') || 'Oponente';
   const opponentAvatar = searchParams.get('opponentAvatar') || `https://placehold.co/40x40.png?text=${opponentTag[0] || 'O'}`;
-  
+  const opponentBackendId = searchParams.get('opponentBackendId'); 
+
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -44,12 +43,12 @@ const ChatPageContent = () => {
   useEffect(scrollToBottom, [messages]);
 
   useEffect(() => {
-    if (!user || !matchId) return;
+    if (!user || !matchId) return; // user.id es googleId
       const initialMessage: ChatMessage = {
-        id: `sys-${Date.now()}`,
-        matchId,
-        senderId: 'system',
-        text: `Chat iniciado para el duelo con ${opponentTag}. ¡Compartan sus links de amigo de Clash Royale para comenzar!`,
+        id: `sys-${Date.now()}`, 
+        matchId, 
+        senderId: 'system', 
+        text: `Chat iniciado para el duelo (Apuesta ID: ${matchId}) con ${opponentTag}. ¡Compartan sus links de amigo de Clash Royale para comenzar!`,
         timestamp: new Date().toISOString(),
         isSystemMessage: true,
       };
@@ -57,18 +56,18 @@ const ChatPageContent = () => {
   }, [user, matchId, opponentTag]);
 
   const saveMessages = (updatedMessages: ChatMessage[]) => {
-    // En un sistema real, esto interactuaría con un backend para guardar mensajes.
-    // Para este prototipo, esta función es un marcador de posición.
+    // La API actual no tiene endpoints para chat.
+    // console.log("Mensajes (no persistidos):", updatedMessages);
   }
 
   const handleSendMessage = (e: FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || !user.id) return; // user.id es googleId
 
     const message: ChatMessage = {
-      id: `${user.id}-${Date.now()}`,
+      id: `${user.id}-${Date.now()}`, 
       matchId,
-      senderId: user.id,
+      senderId: user.id, // googleId del remitente
       text: newMessage,
       timestamp: new Date().toISOString(),
     };
@@ -79,15 +78,16 @@ const ChatPageContent = () => {
   };
   
   const handleShareFriendLink = () => {
-    if (!user) return;
+    if (!user || !user.id) return; 
     const linkToShare = user.friendLink;
+    const userDisplayName = user.clashTag || user.username;
     
     let friendLinkMessage: string;
 
     if (linkToShare) {
-      friendLinkMessage = `${user.clashTag} compartió su link de amigo: <a href="${linkToShare}" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">${linkToShare}</a>`;
+      friendLinkMessage = `${userDisplayName} compartió su link de amigo: <a href="${linkToShare}" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">${linkToShare}</a>`;
     } else {
-      friendLinkMessage = `${user.clashTag} intentó compartir su link de amigo, pero no lo tiene configurado en su perfil.`;
+      friendLinkMessage = `${userDisplayName} intentó compartir su link de amigo, pero no lo tiene configurado en su perfil.`;
     }
     
     const message: ChatMessage = {
@@ -105,8 +105,15 @@ const ChatPageContent = () => {
   };
 
   const handleResultSubmission = (result: 'win' | 'loss') => {
-    if (!user || resultSubmitted) return;
-
+    if (!user || !user.backendId || resultSubmitted) { // Se necesita user.backendId para enviar al backend
+        toast({ title: "Error", description: "No se puede enviar el resultado sin identificación de backend del usuario.", variant: "destructive"});
+        return;
+    }
+    
+    // Aquí se llamaría a una acción para enviar el resultado al backend (ej. POST /api/partidas)
+    // Se necesitaría: apuestaId (que es matchId), y ganadorId (user.backendId o opponentBackendId)
+    console.log(`Resultado enviado: Usuario con backendId ${user.backendId} ${result === 'win' ? 'ganó' : 'perdió'} la apuesta ${matchId}. Oponente backendId: ${opponentBackendId}. Adjunto: ${screenshotFile?.name || 'ninguno'}`);
+    
     toast({
       title: "¡Resultado Enviado!",
       description: `Reportaste una ${result === 'win' ? 'victoria' : 'derrota'}. ${screenshotFile ? 'Comprobante adjuntado.' : 'Sin comprobante.'} Esperando al oponente si es necesario, o verificación del administrador.`,
@@ -117,9 +124,10 @@ const ChatPageContent = () => {
     setIsSubmittingResult(false); 
     setScreenshotFile(null);
     
-     const resultMessageText = `${user.clashTag} envió el resultado del duelo como ${result === 'win' ? 'VICTORIA' : 'DERROTA'}. ${screenshotFile ? 'Captura de pantalla proporcionada.' : 'No se proporcionó captura.'}`;
+     const userDisplayName = user.clashTag || user.username;
+     const resultMessageText = `${userDisplayName} envió el resultado del duelo como ${result === 'win' ? 'VICTORIA' : 'DERROTA'}. ${screenshotFile ? 'Captura de pantalla proporcionada.' : 'No se proporcionó captura.'}`;
      const resultSystemMessage: ChatMessage = {
-      id: `sys-result-${user.id}-${Date.now()}`,
+      id: `sys-result-${user.id}-${Date.now()}`, // user.id es googleId
       matchId,
       senderId: 'system',
       text: resultMessageText,

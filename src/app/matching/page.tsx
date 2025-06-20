@@ -10,78 +10,108 @@ import { SwordsIcon, CrownIcon } from '@/components/icons/ClashRoyaleIcons';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion'; // For animations
+import { createBetAction } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock opponent data
+
+// Mock opponent data - opponent's backendId (UUID) would be used if joining their bet
 const mockOpponents = [
-  { id: 'opp1', clashTag: 'DuelKing#123', avatarUrl: 'https://placehold.co/128x128.png?text=DK', dataAiHint: 'gaming avatar king' },
-  { id: 'opp2', clashTag: 'ArenaPro#456', avatarUrl: 'https://placehold.co/128x128.png?text=AP', dataAiHint: 'gaming avatar pro' },
-  { id: 'opp3', clashTag: 'Legend#789', avatarUrl: 'https://placehold.co/128x128.png?text=L', dataAiHint: 'gaming avatar legend' },
+  { backendId: 'opp1-backend-uuid', clashTag: 'DuelKing#123', avatarUrl: 'https://placehold.co/128x128.png?text=DK', dataAiHint: 'gaming avatar king' },
+  { backendId: 'opp2-backend-uuid', clashTag: 'ArenaPro#456', avatarUrl: 'https://placehold.co/128x128.png?text=AP', dataAiHint: 'gaming avatar pro' },
+  { backendId: 'opp3-backend-uuid', clashTag: 'Legend#789', avatarUrl: 'https://placehold.co/128x128.png?text=L', dataAiHint: 'gaming avatar legend' },
 ];
 
 const MatchingPageContent = () => {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   
   const mode = searchParams.get('mode') as 'classic' | 'triple-draft' | null;
   const modeDisplay = mode === 'classic' ? 'Batalla Clásica' : mode === 'triple-draft' ? 'Triple Elección' : 'Duelo Estándar';
 
   const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
-  const [opponent, setOpponent] = useState<{ id: string; clashTag: string; avatarUrl: string; dataAiHint: string; } | null>(null);
+  const [opponent, setOpponent] = useState<{ backendId: string; clashTag: string; avatarUrl: string; dataAiHint: string; } | null>(null);
+  const [betId, setBetId] = useState<string | null>(null); // This will be the bet's UUID from backend
 
   // Effect for setting up search and progress
   useEffect(() => {
-    if (!user) return;
+    if (!user || !user.backendId) { 
+      if (user && !user.backendId) { // User is partially loaded but no backendId
+        toast({ title: "Error de Usuario", description: "No se pudo identificar al usuario en el backend. Intenta recargar.", variant: "destructive"});
+        router.replace('/');
+      }
+      return;
+    }
+
 
     if (!mode || (mode !== 'classic' && mode !== 'triple-draft')) {
       router.replace('/'); 
       return;
     }
     if (user.balance < 6000) {
+        toast({ title: "Saldo Insuficiente", description: "Necesitas al menos $6,000 COP para crear una apuesta.", variant: "destructive"});
         router.replace('/');
         return;
     }
 
-    // Reset state for a new search
     setOpponent(null);
     setProgress(0);
-    setStatus(`Buscando oponente para ${modeDisplay}...`);
+    setStatus(`Creando apuesta para ${modeDisplay}...`);
+    setBetId(null);
 
-    const progressInterval = setInterval(() => {
-      setProgress(prev => Math.min(prev + 10, 100)); // Faster progress for demo
-    }, 250); 
+    const initBet = async () => {
+      if (!user.backendId) return; 
+      const result = await createBetAction(user.backendId, 6000, mode); // Use backendId
+      if (result.bet && result.bet.id) {
+        setBetId(result.bet.id); // Store the bet's UUID from backend
+        setStatus(`Apuesta ${result.bet.id} creada. Buscando oponente para ${modeDisplay}...`);
+        
+        const progressInterval = setInterval(() => {
+          setProgress(prev => Math.min(prev + 10, 100));
+        }, 250); 
 
-    // Timeout to find an opponent
-    const searchTimeoutId = setTimeout(() => {
-      const randomOpponent = mockOpponents[Math.floor(Math.random() * mockOpponents.length)];
-      setOpponent(randomOpponent); 
-      clearInterval(progressInterval); 
-      setProgress(100);
-    }, 5000); // Find opponent after 5 seconds
+        // Simulate finding an opponent
+        const searchTimeoutId = setTimeout(() => {
+          const randomOpponent = mockOpponents[Math.floor(Math.random() * mockOpponents.length)];
+          setOpponent(randomOpponent); 
+          clearInterval(progressInterval); 
+          setProgress(100);
+          // TODO: En un sistema real, aquí se podría llamar a un endpoint para unirse a la apuesta `betId` con `randomOpponent.backendId`
+          // o el backend manejaría el emparejamiento.
+        }, 5000);
 
-    return () => {
-      clearInterval(progressInterval);
-      clearTimeout(searchTimeoutId);
+        return () => {
+          clearInterval(progressInterval);
+          clearTimeout(searchTimeoutId);
+        };
+      } else {
+        toast({ title: "Error al Crear Apuesta", description: result.error || "No se pudo iniciar la búsqueda.", variant: "destructive" });
+        router.replace('/');
+      }
     };
-  }, [user, router, mode, modeDisplay]); 
+    
+    initBet();
+
+  }, [user, router, mode, modeDisplay, toast]); 
 
   // Effect to handle navigation once an opponent is found
   useEffect(() => {
-    if (opponent && user && mode && modeDisplay && router) { // Added router to dependencies
+    if (opponent && user && mode && modeDisplay && router && betId) { 
         setStatus(`¡Oponente Encontrado: ${opponent.clashTag} para ${modeDisplay}!`);
 
         const matchStartTimeoutId = setTimeout(() => {
             setStatus(`¡Duelo iniciando con ${opponent.clashTag} (${modeDisplay})!`);
-            const matchId = `match_${user.id}_vs_${opponent.id}_${Date.now()}_${mode}`;
-            router.push(`/chat/${matchId}?opponentTag=${encodeURIComponent(opponent.clashTag)}&opponentAvatar=${encodeURIComponent(opponent.avatarUrl)}`);
-        }, 3000); // Navigate 3 seconds after opponent is found
+            // El matchId para el chat ahora es el ID de la apuesta del backend (betId)
+            router.push(`/chat/${betId}?opponentTag=${encodeURIComponent(opponent.clashTag)}&opponentAvatar=${encodeURIComponent(opponent.avatarUrl)}&opponentBackendId=${encodeURIComponent(opponent.backendId)}`);
+        }, 3000);
 
         return () => {
             clearTimeout(matchStartTimeoutId);
         };
     }
-  }, [opponent, user, router, mode, modeDisplay]);
+  }, [opponent, user, router, mode, modeDisplay, betId]);
 
 
   if (!user) return <p>Cargando...</p>;
@@ -112,10 +142,10 @@ const MatchingPageContent = () => {
             className="flex flex-col items-center space-y-2"
           >
             <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-accent shadow-xl">
-              <AvatarImage src={user.avatarUrl || `https://placehold.co/128x128.png?text=${user.clashTag?.[0] || 'U'}`} alt={user.clashTag} data-ai-hint="gaming avatar user"/>
-              <AvatarFallback className="text-5xl bg-primary/30">{user.clashTag?.[0] || 'U'}</AvatarFallback>
+              <AvatarImage src={user.avatarUrl || `https://placehold.co/128x128.png?text=${user.username?.[0] || 'U'}`} alt={user.username} data-ai-hint="gaming avatar user"/>
+              <AvatarFallback className="text-5xl bg-primary/30">{user.username?.[0] || 'U'}</AvatarFallback>
             </Avatar>
-            <p className="text-xl font-semibold text-foreground">{user.clashTag}</p>
+            <p className="text-xl font-semibold text-foreground">{user.clashTag || user.username}</p>
           </motion.div>
 
           <motion.div
@@ -171,6 +201,7 @@ const MatchingPageContent = () => {
         <CardContent>
             <Progress value={progress} className="w-full h-4 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary" />
             <p className="text-sm text-muted-foreground mt-2">Monto de Apuesta: $6,000 COP</p>
+             {betId && <p className="text-xs text-muted-foreground mt-1">ID Apuesta: {betId}</p>}
         </CardContent>
       </Card>
     </div>
@@ -184,4 +215,3 @@ export default function MatchingPage() {
     </AppLayout>
   );
 }
-

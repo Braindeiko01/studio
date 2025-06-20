@@ -10,29 +10,35 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-// import { Button } from '@/components/ui/button'; // Ya no se usa para los botones de cancelar en modal
 import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
 import { Coins, UploadCloud, Swords, Layers, Banknote } from 'lucide-react';
+import { requestTransactionAction } from '@/lib/actions'; 
 
 
 const HomePageContent = () => {
-  const { user } = useAuth(); 
+  const { user, refreshUser } = useAuth(); 
   const router = useRouter();
   const { toast } = useToast();
   
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositScreenshotFile, setDepositScreenshotFile] = useState<File | null>(null);
+  const [isDepositLoading, setIsDepositLoading] = useState(false);
 
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
 
   if (!user) {
     return <p>Cargando datos del usuario...</p>;
   }
 
   const handleFindMatch = (mode: 'classic' | 'triple-draft') => {
+    if (!user.backendId) {
+      toast({ title: "Error de Usuario", description: "Falta el ID de backend del usuario.", variant: "destructive" });
+      return;
+    }
     if (user.balance < 6000) {
       toast({
         title: "Saldo Insuficiente",
@@ -55,49 +61,50 @@ const HomePageContent = () => {
     setIsDepositModalOpen(false);
   };
 
-  const handleDepositConfirm = () => {
+  const handleDepositConfirm = async () => {
+    if (!user || !user.backendId) {
+      toast({ title: "Error", description: "Usuario no identificado para el backend.", variant: "destructive" });
+      return;
+    }
     const amount = parseFloat(depositAmount);
-    if (isNaN(amount) || amount <= 0) {
+    if (isNaN(amount) || amount <= 0 || amount < 6000 || amount % 6000 !== 0) {
       toast({
         title: "Monto Inválido",
-        description: "Por favor, ingresa un monto de depósito válido y positivo.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (amount < 6000) {
-      toast({
-        title: "Monto Inválido",
-        description: "El monto mínimo de depósito es de 6,000 COP.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (amount % 6000 !== 0) {
-      toast({
-        title: "Monto Inválido",
-        description: "El monto del depósito debe ser un múltiplo de 6,000 COP (ej. 6.000, 12.000, 18.000, etc.).",
+        description: "El monto del depósito debe ser un mínimo de 6,000 COP y en múltiplos de 6,000 COP.",
         variant: "destructive",
       });
       return;
     }
     if (!depositScreenshotFile) {
-      toast({
-        title: "Comprobante Requerido",
-        description: "Por favor, adjunta el comprobante de la transacción.",
-        variant: "destructive",
-      });
+      toast({ title: "Comprobante Requerido", description: "Por favor, adjunta el comprobante.", variant: "destructive" });
       return;
     }
 
-    toast({
-      title: "¡Solicitud de Depósito Recibida!",
-      description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante (${depositScreenshotFile.name}) está siendo revisado. Tu saldo se actualizará una vez verificado.`,
-      variant: "default",
-    });
-    setIsDepositModalOpen(false);
-    setDepositAmount('6000');
-    setDepositScreenshotFile(null);
+    setIsDepositLoading(true);
+    // TODO: La subida de archivos (depositScreenshotFile) necesitará un manejo especial.
+    // requestTransactionAction actualmente no maneja la subida de archivos.
+    // Esto es una simplificación; en una app real, subirías el archivo a un storage
+    // y pasarías la URL del archivo al backend, o el backend tendría un endpoint para multipart/form-data.
+    const result = await requestTransactionAction(user.backendId, amount, "DEPOSITO");
+    setIsDepositLoading(false);
+
+    if (result.transaction) {
+      toast({
+        title: "¡Solicitud de Depósito Recibida!",
+        description: `Has solicitado un depósito de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)}. Tu comprobante (${depositScreenshotFile.name}) está siendo revisado. Tu saldo se actualizará una vez verificado (ID Transacción: ${result.transaction.id}).`,
+        variant: "default",
+      });
+      await refreshUser(); 
+      setIsDepositModalOpen(false);
+      setDepositAmount('6000');
+      setDepositScreenshotFile(null);
+    } else {
+      toast({
+        title: "Error de Depósito",
+        description: result.error || "No se pudo procesar la solicitud de depósito.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Withdraw Modal Logic
@@ -118,31 +125,41 @@ const HomePageContent = () => {
     setIsWithdrawModalOpen(false);
   };
 
-  const handleWithdrawConfirm = () => {
+  const handleWithdrawConfirm = async () => {
+    if (!user || !user.backendId) {
+      toast({ title: "Error", description: "Usuario no identificado para el backend.", variant: "destructive" });
+      return;
+    }
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({
-        title: "Monto Inválido",
-        description: "Por favor, ingresa un monto de retiro válido y positivo.",
-        variant: "destructive",
-      });
+      toast({ title: "Monto Inválido", description: "Ingresa un monto válido.", variant: "destructive" });
       return;
     }
     if (amount > user.balance) {
-      toast({
-        title: "Saldo Insuficiente",
-        description: "No puedes retirar más de tu saldo actual.",
-        variant: "destructive",
-      });
+      toast({ title: "Saldo Insuficiente", description: "No puedes retirar más de tu saldo.", variant: "destructive" });
       return;
     }
-    toast({
-      title: "¡Solicitud de Retiro Recibida!",
-      description: `Has solicitado un retiro de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)} a tu cuenta Nequi ${user.nequiAccount}. Se procesará pronto.`,
-      variant: "default",
-    });
-    setIsWithdrawModalOpen(false);
-    setWithdrawAmount('');
+    
+    setIsWithdrawLoading(true);
+    const result = await requestTransactionAction(user.backendId, amount, "RETIRO");
+    setIsWithdrawLoading(false);
+
+    if (result.transaction) {
+      toast({
+        title: "¡Solicitud de Retiro Recibida!",
+        description: `Has solicitado un retiro de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)} a tu cuenta Nequi ${user.nequiAccount}. Se procesará pronto (ID Transacción: ${result.transaction.id}).`,
+        variant: "default",
+      });
+      await refreshUser(); 
+      setIsWithdrawModalOpen(false);
+      setWithdrawAmount('');
+    } else {
+       toast({
+        title: "Error de Retiro",
+        description: result.error || "No se pudo procesar la solicitud de retiro.",
+        variant: "destructive",
+      });
+    }
   };
 
 
@@ -152,8 +169,8 @@ const HomePageContent = () => {
         <CardHeader className="bg-primary/10 p-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
           <div className="flex items-center space-x-4">
             <Avatar className="h-20 w-20 border-4 border-accent shadow-lg">
-              <AvatarImage src={user.avatarUrl || `https://placehold.co/100x100.png?text=${user.clashTag?.[0] || 'U'}`} alt={user.clashTag} data-ai-hint="gaming avatar"/>
-              <AvatarFallback className="text-3xl bg-primary/30 text-primary-foreground">{user.clashTag?.[0] || 'U'}</AvatarFallback>
+              <AvatarImage src={user.avatarUrl || `https://placehold.co/100x100.png?text=${user.username?.[0] || 'U'}`} alt={user.username} data-ai-hint="gaming avatar"/>
+              <AvatarFallback className="text-3xl bg-primary/30 text-primary-foreground">{user.username?.[0] || 'U'}</AvatarFallback>
             </Avatar>
             <div>
               <CardTitle className="text-3xl font-headline text-primary">{user.username}</CardTitle>
@@ -176,8 +193,9 @@ const HomePageContent = () => {
                     onClick={handleOpenDepositModal}
                     className="flex-1 text-lg py-3"
                     iconLeft={<Coins className="h-6 w-6" />}
+                    disabled={isDepositLoading}
                 >
-                    Depositar Saldo
+                    {isDepositLoading ? "Procesando..." : "Depositar Saldo"}
                 </CartoonButton>
                 <CartoonButton
                     size="medium"
@@ -185,9 +203,9 @@ const HomePageContent = () => {
                     onClick={handleOpenWithdrawModal}
                     className="flex-1 text-lg py-3"
                     iconLeft={<Banknote className="h-6 w-6" />}
-                    disabled={user.balance === 0 || !user.nequiAccount}
+                    disabled={user.balance === 0 || !user.nequiAccount || isWithdrawLoading}
                 >
-                    Retirar Saldo
+                    {isWithdrawLoading ? "Procesando..." : "Retirar Saldo"}
                 </CartoonButton>
             </div>
         </CardContent>
@@ -269,16 +287,16 @@ const HomePageContent = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 p-6 pt-0 mt-6">
-              <CartoonButton variant="secondary" onClick={handleCloseDepositModal} className="w-full sm:w-auto" size="small">Cancelar</CartoonButton>
+              <CartoonButton variant="secondary" onClick={handleCloseDepositModal} className="w-full sm:w-auto" size="small" disabled={isDepositLoading}>Cancelar</CartoonButton>
               <CartoonButton 
                 variant="default"
                 onClick={handleDepositConfirm} 
                 className="w-full sm:w-auto"
                 size="small"
                 iconLeft={<Coins className="h-5 w-5" />}
-                disabled={!depositAmount || parseFloat(depositAmount) < 6000 || parseFloat(depositAmount) % 6000 !== 0 || !depositScreenshotFile}
+                disabled={!depositAmount || parseFloat(depositAmount) < 6000 || parseFloat(depositAmount) % 6000 !== 0 || !depositScreenshotFile || isDepositLoading}
               >
-                Confirmar Depósito
+                {isDepositLoading ? "Confirmando..." : "Confirmar Depósito"}
               </CartoonButton>
             </CardFooter>
           </Card>
@@ -314,16 +332,16 @@ const HomePageContent = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 p-6 pt-0 mt-6">
-              <CartoonButton variant="secondary" onClick={handleCloseWithdrawModal} className="w-full sm:w-auto" size="small">Cancelar</CartoonButton>
+              <CartoonButton variant="secondary" onClick={handleCloseWithdrawModal} className="w-full sm:w-auto" size="small" disabled={isWithdrawLoading}>Cancelar</CartoonButton>
               <CartoonButton 
                 variant="default"
                 onClick={handleWithdrawConfirm} 
                 className="w-full sm:w-auto"
                 size="small"
                 iconLeft={<Banknote className="h-5 w-5" />}
-                disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > user.balance}
+                disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > user.balance || isWithdrawLoading}
               >
-                Confirmar Retiro
+                {isWithdrawLoading ? "Confirmando..." : "Confirmar Retiro"}
               </CartoonButton>
             </CardFooter>
           </Card>
@@ -341,6 +359,4 @@ export default function HomePage() {
     </AppLayout>
   );
 }
-    
-
     

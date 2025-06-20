@@ -17,9 +17,11 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-// USER_ID_STORAGE_KEY ahora almacenará el ID del usuario del backend (UUID)
-const USER_ID_STORAGE_KEY = 'cr_duels_backend_user_id'; 
-const GOOGLE_ID_STORAGE_KEY = 'cr_duels_google_id'; // Para guardar el googleId por si se necesita
+
+// USER_ID_STORAGE_KEY ahora almacenará el googleId (que es User.id en el frontend)
+const USER_ID_STORAGE_KEY = 'cr_duels_user_id'; 
+// BACKEND_ID_STORAGE_KEY almacenará el UUID generado por el backend
+const BACKEND_ID_STORAGE_KEY = 'cr_duels_backend_user_id';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -33,27 +35,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (hasMounted) {
-      const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // Este es el ID del backend (UUID)
-      if (storedUserId) {
+      const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // Este es el googleId
+      const storedBackendId = localStorage.getItem(BACKEND_ID_STORAGE_KEY); // Este es el UUID del backend
+
+      if (storedUserId && storedBackendId) {
         setIsLoading(true);
-        getUserDataAction(storedUserId) // Se llama con el ID del backend
+        getUserDataAction(storedBackendId) // Se llama con el ID del backend (UUID)
           .then(result => {
             if (result.user) {
-              // Si necesitamos el googleId y no viene del backend, intentamos cargarlo de localStorage
-              const storedGoogleId = localStorage.getItem(GOOGLE_ID_STORAGE_KEY);
-              // Aseguramos que el usuario tenga el googleId si está disponible.
-              // Nota: getUserDataAction podría ser mejorado para devolver el googleId si el backend lo almacena.
-              setUser({ ...result.user, googleId: result.user.googleId || storedGoogleId || undefined });
+              // getUserDataAction devuelve User con backendId. Le asignamos el googleId (User.id)
+              // y preservamos el avatarUrl que podría estar ya en el estado local si se actualizó recientemente.
+              setUser({ 
+                ...result.user, 
+                id: storedUserId, // Asignar el googleId almacenado
+                avatarUrl: result.user.avatarUrl || user?.avatarUrl // Mantener avatar si existe
+              });
             } else {
-              // Si no se encuentra el usuario en el backend, limpiamos localStorage
+              // Si no se encuentra el usuario en el backend (o hay error), limpiar localStorage
               localStorage.removeItem(USER_ID_STORAGE_KEY);
-              localStorage.removeItem(GOOGLE_ID_STORAGE_KEY);
+              localStorage.removeItem(BACKEND_ID_STORAGE_KEY);
             }
           })
           .catch(error => {
             console.error("Error fetching user data on mount:", error);
             localStorage.removeItem(USER_ID_STORAGE_KEY);
-            localStorage.removeItem(GOOGLE_ID_STORAGE_KEY);
+            localStorage.removeItem(BACKEND_ID_STORAGE_KEY);
           })
           .finally(() => {
             setIsLoading(false);
@@ -62,68 +68,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       }
     }
-  }, [hasMounted]);
+  }, [hasMounted]); // Removí 'user' de las dependencias para evitar bucles si avatarUrl cambia.
 
   const login = (userData: User) => {
+    // userData.id es el googleId
+    // userData.backendId es el UUID del backend
     setUser(userData);
-    if (userData.id) { // userData.id es el ID del backend (UUID)
+    if (userData.id) { 
         localStorage.setItem(USER_ID_STORAGE_KEY, userData.id);
     }
-    if (userData.googleId) { // Guardar googleId si está disponible
-        localStorage.setItem(GOOGLE_ID_STORAGE_KEY, userData.googleId);
+    if (userData.backendId) { 
+        localStorage.setItem(BACKEND_ID_STORAGE_KEY, userData.backendId);
     }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem(USER_ID_STORAGE_KEY);
-    localStorage.removeItem(GOOGLE_ID_STORAGE_KEY);
+    localStorage.removeItem(BACKEND_ID_STORAGE_KEY);
     router.push('/login');
   };
   
   const updateUser = async (updatedData: Partial<User>): Promise<{ success: boolean; error?: string | null }> => {
-    if (!user || !user.id) { // user.id es el ID del backend (UUID)
+    if (!user || !user.id ) { // user.id es googleId
       return { success: false, error: "Usuario no autenticado." };
     }
     
-    // Actualización optimista en el frontend
     const optimisticUser = { ...user, ...updatedData } as User; 
     setUser(optimisticUser);
 
-    // ** NOTA IMPORTANTE SOBRE LA API DEL BACKEND **
     // La API actual (según la especificación OpenAPI) NO tiene un endpoint para actualizar 
     // el perfil de un usuario. La función `updateUserProfileInMemoryAction` es una simulación.
     // Los cambios NO se persistirán en el backend hasta que se implemente dicho endpoint.
-    const simulationResult = await updateUserProfileInMemoryAction(user.id, updatedData);
+    const simulationResult = await updateUserProfileInMemoryAction(user.id, updatedData); // user.id es googleId
     
     if (simulationResult.user) {
-       // console.warn("Perfil actualizado solo en memoria del frontend debido a limitación de API.");
-       // La actualización optimista ya ocurrió. Si la simulación/backend devolviera datos distintos,
-       // aquí se podría re-sincronizar: setUser(simulationResult.user);
+       // La actualización optimista ya ocurrió.
        return { success: true };
     } else {
-       // Revertir si la simulación fallara o si hubiera una llamada real fallida
-       await refreshUser(); // Vuelve a cargar los datos del "backend" (o estado anterior)
+       await refreshUser(); 
        return { success: false, error: simulationResult.error || "Error simulando actualización." };
     }
   };
 
   const refreshUser = async () => {
-    const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // ID del backend (UUID)
-    if (storedUserId) {
+    const storedUserId = localStorage.getItem(USER_ID_STORAGE_KEY); // googleId
+    const storedBackendId = localStorage.getItem(BACKEND_ID_STORAGE_KEY); // backend UUID
+
+    if (storedUserId && storedBackendId) {
       setIsLoading(true);
       try {
-        const result = await getUserDataAction(storedUserId);
+        const result = await getUserDataAction(storedBackendId); // Usar backendId para la llamada
         if (result.user) {
-          const storedGoogleId = localStorage.getItem(GOOGLE_ID_STORAGE_KEY);
-          setUser({ ...result.user, googleId: result.user.googleId || storedGoogleId || undefined });
+          setUser({ 
+            ...result.user, 
+            id: storedUserId, // Asegurar que User.id (googleId) esté presente
+            backendId: storedBackendId, // Asegurar que User.backendId esté presente
+            avatarUrl: result.user.avatarUrl || user?.avatarUrl // Mantener avatar si existe
+          });
         } else if (result.error) {
           console.error("Error refreshing user:", result.error);
           logout(); 
         }
       } catch (error) {
         console.error("Failed to refresh user data:", error);
-        logout(); // Desloguear en caso de error de red grave
+        logout();
       } finally {
         setIsLoading(false);
       }
