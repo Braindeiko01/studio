@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { ReduxProvider } from '@/store/ReduxProvider';
 
 export const metadata: Metadata = {
   title: 'CR Duels - P2P Clash Royale Betting',
@@ -21,10 +21,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
+        <ReduxProvider>
           {children}
           <Toaster />
-        </AuthProvider>
+        </ReduxProvider>
       </body>
     </html>
   );
