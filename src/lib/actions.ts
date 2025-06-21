@@ -217,3 +217,21 @@ export async function getUserTransactionsAction(
     return { transactions: null, error: error.message || "Error de red al obtener transacciones." };
   }
 }
+
+export async function approveTransactionAction(
+  transactionId: string,
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/transacciones/${transactionId}/aprobar`, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: `Error del servidor: ${response.status}` }));
+      return { success: false, error: errorData.message || `Error ${response.status} al aprobar transacción.` };
+    }
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('Error en approveTransactionAction:', error);
+    return { success: false, error: error.message || 'Error de red al aprobar transacción.' };
+  }
+}
