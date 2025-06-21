@@ -13,13 +13,15 @@ import { Label } from '@/components/ui/label';
 import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
 import { Coins, UploadCloud, Swords, Layers, Banknote } from 'lucide-react';
-import { requestTransactionAction } from '@/lib/actions'; 
+import { requestTransactionAction } from '@/lib/actions';
+import useTransactionUpdates from '@/hooks/useTransactionUpdates';
 
 
 const HomePageContent = () => {
-  const { user, refreshUser } = useAuth(); 
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  useTransactionUpdates();
   
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
