@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +29,13 @@ const HomePageContent = () => {
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
+
+  useEffect(() => {
+    console.log("¡La página de inicio se ha cargado en el frontend! Puedes ver este mensaje en la consola del navegador.");
+    if (user) {
+      console.log("Datos del usuario actualmente en el estado del frontend:", user);
+    }
+  }, [user]);
 
   if (!user) {
     return <p>Cargando datos del usuario...</p>;
