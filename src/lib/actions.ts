@@ -77,11 +77,11 @@ export async function registerUserAction(
 }
 
 export async function loginWithGoogleAction(
-  googleId: string
+  googleAuthData: GoogleAuthValues
 ): Promise<{ user: User | null; error: string | null; needsProfileCompletion?: boolean }> {
   
   // Intenta obtener el usuario del backend usando el googleId
-  const existingUserResult = await getUserDataAction(googleId);
+  const existingUserResult = await getUserDataAction(googleAuthData.googleId);
 
   if (existingUserResult.user) {
     // El usuario ya existe en el backend

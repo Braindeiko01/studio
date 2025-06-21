@@ -50,21 +50,19 @@ export default function LoginPage() {
 
       const response = await loginWithGoogleAction(googleAuthData);
 
-      if (response.user) {
-          if (response.needsProfileCompletion) {
-              try {
-                // Almacenar los datos de Google para pre-rellenar el formulario de registro
-                sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify(googleAuthData));
-                router.push('/register'); 
-              } catch (e) {
-                console.error("Error setting sessionStorage:", e);
-                toast({ title: "Error de Sesión", description: "No se pudo guardar la información temporal. Intenta de nuevo.", variant: "destructive"});
-              }
-          } else {
-             authContext.login(response.user as User);
-             toast({ title: "¡Bienvenido de nuevo!", description: `Hola ${response.user.username}`, variant: "default" });
-             router.push('/');
+      if (response.needsProfileCompletion) {
+          try {
+            // Almacenar los datos de Google para pre-rellenar el formulario de registro
+            sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify(googleAuthData));
+            router.push('/register'); 
+          } catch (e) {
+            console.error("Error setting sessionStorage:", e);
+            toast({ title: "Error de Sesión", description: "No se pudo guardar la información temporal. Intenta de nuevo.", variant: "destructive"});
           }
+      } else if (response.user) {
+         authContext.login(response.user as User);
+         toast({ title: "¡Bienvenido de nuevo!", description: `Hola ${response.user.username}`, variant: "default" });
+         router.push('/');
       } else {
           toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
       }

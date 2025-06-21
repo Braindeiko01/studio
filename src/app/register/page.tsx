@@ -103,15 +103,13 @@ export default function RegisterPage() {
 
       const response = await loginWithGoogleAction(realGoogleData);
       
-      if(response.user){
-          if (response.needsProfileCompletion) {
-              setGoogleAuthData(realGoogleData);
-              setStep(2);
-              toast({ title: "Conectado con Google", description: `Hola ${realGoogleData.username}, por favor completa tu perfil.`});
-          } else {
-              auth.login(response.user as User);
-              router.push('/');
-          }
+      if (response.needsProfileCompletion) {
+          setGoogleAuthData(realGoogleData);
+          setStep(2);
+          toast({ title: "Conectado con Google", description: `Hola ${realGoogleData.username}, por favor completa tu perfil.`});
+      } else if (response.user){
+          auth.login(response.user as User);
+          router.push('/');
       } else {
           toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
       }
