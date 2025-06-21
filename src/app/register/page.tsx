@@ -117,7 +117,7 @@ export default function RegisterPage() {
         const tagRegex = /tag=([0289PYLQGRJCUV]{3,})&/i;
         const match = profileData.friendLink.match(tagRegex);
         if (match && match[1]) {
-            extractedClashTag = `#${match[1].toUpperCase()}`;
+            extractedClashTag = match[1].toUpperCase();
         }
     }
 
@@ -233,7 +233,7 @@ export default function RegisterPage() {
                         <Input placeholder="https://link.clashroyale.com/..." {...field} className="text-base py-5 border-2 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
-                      <p className="text-xs text-muted-foreground mt-1">Tu Tag de jugador (ej. #P01Y2G3R) se extraerá automáticamente de este link.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Tu Tag de jugador (ej. P01Y2G3R) se extraerá automáticamente de este link.</p>
                     </FormItem>
                   )}
                 />
