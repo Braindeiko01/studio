@@ -28,7 +28,7 @@ const completeProfileSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
-    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\/?\?.*tag=([0289PYLQGRJCUV]{3,})/, { message: "Formato de link de invitación de Clash Royale inválido o no contiene un tag." }),
+    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/[a-z]{2}\/?\?.*tag=[0289PYLQGRJCUV]{3,}/, { message: "Formato de link de invitación de Clash Royale inválido o no contiene un tag." }),
 });
 
 export default function RegisterPage() {
@@ -137,7 +137,7 @@ export default function RegisterPage() {
         const tagRegex = /tag=([0289PYLQGRJCUV]{3,})/i;
         const match = profileData.friendLink.match(tagRegex);
         if (match && match[1]) {
-            extractedClashTag = match[1].toUpperCase();
+            extractedClashTag = `#${match[1].toUpperCase()}`;
         }
     }
 
