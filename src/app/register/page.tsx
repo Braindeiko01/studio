@@ -28,7 +28,7 @@ const completeProfileSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
-    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\/?\?tag=([0289PYLQGRJCUV]{3,})&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido." }),
+    .regex(/^https:\/\/link\.clashroyale\.com\/.*/, { message: "Formato de link de invitación de Clash Royale inválido." }),
 });
 
 export default function RegisterPage() {
