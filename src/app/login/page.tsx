@@ -7,66 +7,76 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { CartoonButton } from '@/components/ui/CartoonButton';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CrownIcon, GoogleIcon } from '@/components/icons/ClashRoyaleIcons'; // Assuming GoogleIcon is in ClashRoyaleIcons
+import { CrownIcon, GoogleIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
 import { loginWithGoogleAction } from '@/lib/actions';
 import type { User, GoogleAuthValues } from '@/types';
 import { Button } from '@/components/ui/button';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function LoginPage() {
   const router = useRouter();
-  const auth = useAuth();
+  const authContext = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (auth.isAuthenticated) {
+    if (authContext.isAuthenticated) {
       router.push('/');
     }
-  }, [auth.isAuthenticated, router]);
+  }, [authContext.isAuthenticated, router]);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    // Simulate Google Sign-In popup and data retrieval
-    // In a real app, this would involve a Google SDK call
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call delay
-    
-    const simulatedGoogleData: GoogleAuthValues = {
-      googleId: `google-${Date.now()}-${Math.random().toString(36).substring(7)}`, // Unique simulated Google ID
-      email: `testuser${Math.floor(Math.random() * 1000)}@example.com`,
-      username: `GoogleUser${Math.floor(Math.random() * 100)}`,
-      avatarUrl: `https://placehold.co/100x100.png?text=G${Math.floor(Math.random() * 10)}`,
-    };
-
     try {
-      // loginWithGoogleAction now checks if the user exists on the backend
-      const response = await loginWithGoogleAction(simulatedGoogleData.googleId);
+      // Usar Firebase Authentication para el popup de Google
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const googleUser = result.user;
+
+      if (!googleUser.email) {
+        toast({ title: "Error de autenticación", description: "No se pudo obtener el email de la cuenta de Google.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+      
+      const googleAuthData: GoogleAuthValues = {
+        googleId: googleUser.uid,
+        email: googleUser.email,
+        username: googleUser.displayName || `User${googleUser.uid.substring(0, 5)}`,
+        avatarUrl: googleUser.photoURL || `https://placehold.co/100x100.png?text=${googleUser.displayName?.[0] || 'U'}`,
+      };
+
+      const response = await loginWithGoogleAction(googleAuthData);
 
       if (response.user) {
-          // User exists, log them in
-          auth.login(response.user as User);
-          toast({ title: "¡Bienvenido de nuevo!", description: `Hola ${response.user.username}`, variant: "default" });
-          router.push('/');
-      } else if (response.needsProfileCompletion) {
-          // User does not exist, redirect to complete profile
-          try {
-            // Store the simulated Google data to pre-fill the registration form
-            sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify(simulatedGoogleData));
-            router.push('/register'); 
-          } catch (e) {
-            console.error("Error setting sessionStorage:", e);
-            toast({ title: "Error de Sesión", description: "No se pudo guardar la información temporal. Intenta de nuevo.", variant: "destructive"});
+          if (response.needsProfileCompletion) {
+              try {
+                // Almacenar los datos de Google para pre-rellenar el formulario de registro
+                sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify(googleAuthData));
+                router.push('/register'); 
+              } catch (e) {
+                console.error("Error setting sessionStorage:", e);
+                toast({ title: "Error de Sesión", description: "No se pudo guardar la información temporal. Intenta de nuevo.", variant: "destructive"});
+              }
+          } else {
+             authContext.login(response.user as User);
+             toast({ title: "¡Bienvenido de nuevo!", description: `Hola ${response.user.username}`, variant: "default" });
+             router.push('/');
           }
       } else {
           toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
       }
     } catch (error: any) {
-      toast({ title: "Error de autenticación", description: error.message || "Ocurrió un error inesperado.", variant: "destructive" });
+      if (error.code !== 'auth/popup-closed-by-user') {
+        toast({ title: "Error de autenticación", description: error.message || "Ocurrió un error inesperado.", variant: "destructive" });
+      }
     }
     setIsLoading(false);
   };
 
-  if (auth.isLoading) {
+  if (authContext.isLoading) {
     return <p>Verificando autenticación...</p>;
   }
 

@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth as firebaseAuth } from '@/lib/firebase';
 
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -53,6 +55,7 @@ export default function RegisterPage() {
   }, [auth.isAuthenticated, router]);
 
   useEffect(() => {
+    // Si llegamos a esta página por una redirección desde el login
     if (step === 1) {
       try {
         const pendingData = sessionStorage.getItem('pendingGoogleAuthData');
@@ -80,26 +83,43 @@ export default function RegisterPage() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
-    const simulatedGoogleData: GoogleAuthValues = {
-      googleId: `google-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-      email: `user${Math.floor(Math.random()*1000)}@example.com`,
-      username: `GoogleUser${Math.floor(Math.random()*100)}`,
-      avatarUrl: `https://placehold.co/100x100.png?text=G${Math.floor(Math.random()*10)}`,
-    };
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(firebaseAuth, provider);
+      const googleUser = result.user;
 
-    const response = await loginWithGoogleAction(simulatedGoogleData);
-    if(response.user){
-        if (response.needsProfileCompletion) {
-            setGoogleAuthData(response.user as GoogleAuthValues);
-            setStep(2);
-            toast({ title: "Conectado con Google", description: `Hola ${response.user.username}, por favor completa tu perfil.`});
-        } else {
-            auth.login(response.user as User);
-            router.push('/');
-        }
-    } else {
-        toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
+      if (!googleUser.email) {
+        toast({ title: "Error de autenticación", description: "No se pudo obtener el email de la cuenta de Google.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+      
+      const realGoogleData: GoogleAuthValues = {
+        googleId: googleUser.uid,
+        email: googleUser.email,
+        username: googleUser.displayName || `User${googleUser.uid.substring(0, 5)}`,
+        avatarUrl: googleUser.photoURL || `https://placehold.co/100x100.png?text=${googleUser.displayName?.[0] || 'U'}`,
+      };
+
+      const response = await loginWithGoogleAction(realGoogleData);
+      
+      if(response.user){
+          if (response.needsProfileCompletion) {
+              setGoogleAuthData(realGoogleData);
+              setStep(2);
+              toast({ title: "Conectado con Google", description: `Hola ${realGoogleData.username}, por favor completa tu perfil.`});
+          } else {
+              auth.login(response.user as User);
+              router.push('/');
+          }
+      } else {
+          toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
+      }
+
+    } catch (error: any) {
+       if (error.code !== 'auth/popup-closed-by-user') {
+        toast({ title: "Error de autenticación", description: error.message || "Ocurrió un error inesperado.", variant: "destructive" });
+      }
     }
     
     setIsLoading(false);
@@ -131,8 +151,8 @@ export default function RegisterPage() {
 
     const fullRegistrationData: RegisterWithGoogleData = {
       googleId: googleAuthData.googleId,
-      email: googleAuthData.email, // Email from Google
-      username: profileData.username, // Username from form
+      email: googleAuthData.email,
+      username: profileData.username,
       avatarUrl: googleAuthData.avatarUrl,
       phone: profileData.phone,
       friendLink: profileData.friendLink,
@@ -235,7 +255,7 @@ export default function RegisterPage() {
                         <Input placeholder="https://link.clashroyale.com/..." {...field} className="text-base py-5 border-2 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
-                      <p className="text-xs text-muted-foreground mt-1">Tu Tag de jugador (ej. P01Y2G3R) se extraerá automáticamente de este link.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Tu Tag de jugador (ej. #P01Y2G3R) se extraerá automáticamente de este link.</p>
                     </FormItem>
                   )}
                 />
