@@ -13,6 +13,7 @@ import type {
   BackendPartidaRequestDto,
   BackendPartidaResponseDto,
   BackendMatchResultDto,
+  RegistrarUsuarioRequest,
 } from '@/types';
 
 // URL del Backend. Se usa la variable de entorno o la URL de producción de Railway por defecto.
@@ -24,27 +25,30 @@ export async function registerUserAction(
   data: RegisterWithGoogleData
 ): Promise<{ user: User | null; error: string | null }> {
 
-  const backendPayload: BackendUsuarioDto = {
+  const backendPayload: RegistrarUsuarioRequest = {
     id: data.googleId,
     nombre: data.username,
     email: data.email,
     telefono: data.phone,
     linkAmistad: data.friendLink,
   };
-
+  console.log("Método:", "PUT");
+  console.log("URL:", `${BACKEND_URL}/api/usuarios`);
+  console.log("Payload:", backendPayload);
   console.log("id google: " + data.googleId)
   try {
-    const response = await fetch(`${BACKEND_URL}/api/usuarios/registro`, {
-      method: 'POST',
+    const response = await fetch(`${BACKEND_URL}/api/usuarios`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(backendPayload),
     });
 
+    console.log(backendPayload)
     const registeredBackendUser = await response.json() as BackendUsuarioDto;
-
+    console.log("Respuesta del backend:", registeredBackendUser);
     // Asumimos que el backend devuelve el mismo 'id' (googleId) que se envió.
     if (!registeredBackendUser.id) {
-      return { user: null, error: "El backend no devolvió un ID para el usuario registrado." };
+      return { user: null, error: "El backend no devolvió un ID para el usuario registrado. prueba" };
     }
 
     const appUser: User = {
@@ -72,7 +76,6 @@ export async function loginWithGoogleAction(
   googleAuthData: GoogleAuthValues
 ): Promise<{ user: User | null; error: string | null; needsProfileCompletion?: boolean }> {
 
-  // Intenta obtener el usuario del backend usando el googleId
   const existingUserResult = await getUserDataAction(googleAuthData.googleId);
 
   if (existingUserResult.user) {
@@ -85,13 +88,12 @@ export async function loginWithGoogleAction(
   }
 }
 
-// El parámetro `userId` aquí es el `googleId`
 export async function getUserDataAction(userId: string): Promise<{ user: User | null; error: string | null }> {
   if (!userId) {
     return { user: null, error: 'Se requiere el googleId para obtener datos del usuario.' };
   }
   try {
-    const response = await fetch(`${BACKEND_URL}/api/usuarios/${userId}`); // {id} es googleId
+    const response = await fetch(`${BACKEND_URL}/api/usuarios/${userId}`);
     if (!response.ok) {
       if (response.status === 404) {
         return { user: null, error: 'Usuario no encontrado en el backend.' };
@@ -101,23 +103,21 @@ export async function getUserDataAction(userId: string): Promise<{ user: User | 
     }
     const backendUser = await response.json() as BackendUsuarioDto;
 
-    // Asumimos que backendUser.id es el googleId
     if (!backendUser.id) {
       return { user: null, error: "El backend devolvió datos de usuario incompletos (sin ID)." };
     }
 
     const appUser: User = {
-      id: backendUser.id, // Este es el googleId
+      id: backendUser.id,
       username: backendUser.nombre,
       email: backendUser.email,
       phone: backendUser.telefono,
       clashTag: backendUser.tagClash,
       nequiAccount: backendUser.telefono,
-      balance: backendUser.saldo ?? 0,
-      friendLink: backendUser.linkAmistad || '',
-      // Asumimos que el avatarUrl lo gestiona el frontend o se podría añadir al BackendUsuarioDto si el backend lo gestionara
+      balance: backendUser.saldo,
+      friendLink: backendUser.linkAmistad,
       avatarUrl: `https://placehold.co/100x100.png?text=${backendUser.nombre[0]?.toUpperCase() || 'U'}`,
-      reputacion: backendUser.reputacion ?? 0,
+      reputacion: backendUser.reputacion,
     };
     return { user: appUser, error: null };
 

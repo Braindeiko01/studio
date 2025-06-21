@@ -49,7 +49,8 @@ export default function LoginPage() {
       };
 
       const response = await loginWithGoogleAction(googleAuthData);
-
+      console.log("response")
+      console.log(response)
       if (response.needsProfileCompletion) {
           try {
             // Almacenar los datos de Google para pre-rellenar el formulario de registro

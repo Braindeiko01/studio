@@ -1,22 +1,33 @@
 
-// Tipos del Backend (basados en OpenAPI y adaptados para googleId como PK)
-export interface BackendUsuarioDto {
-  id: string; // Ahora representa el googleId, enviado en registro y recibido en respuestas
+
+export interface RegistrarUsuarioRequest {
+  id: string;
   nombre: string;
   email: string;
-  telefono: string; // Pattern: ^\\+?\\d{7,15}$
-  linkAmistad: string; // Pattern: ^(https://link\.clashroyale\.com/invite/friend\\?tag=[A-Z0-9]+)?$
+  telefono: string;
+  linkAmistad: string;
+}
+
+export interface BackendUsuarioDto {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  tagClash: string;
+  linkAmistad: string;
+  saldo: number;
+  reputacion: number;
 }
 
 export interface BackendTransaccionRequestDto {
-  usuarioId: string; // googleId del usuario
+  usuarioId: string;
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
 }
 
 export interface BackendTransaccionResponseDto {
   id: string; // UUID de la transacción (propio del backend)
-  usuarioId: string; // googleId del usuario
+  usuarioId: string;
   monto: number;
   tipo: "DEPOSITO" | "RETIRO" | "PREMIO";
   estado: "PENDIENTE" | "APROBADA" | "RECHAZADA";
@@ -24,8 +35,8 @@ export interface BackendTransaccionResponseDto {
 }
 
 export interface BackendApuestaRequestDto {
-  jugador1Id: string; // googleId del usuario
-  jugador2Id?: string; // googleId del usuario (opcional)
+  jugador1Id: string;
+  jugador2Id?: string;
   monto: number;
   modoJuego: string;
 }
@@ -42,30 +53,30 @@ export interface BackendApuestaResponseDto {
 
 export interface BackendPartidaRequestDto {
   apuestaId: string; // UUID de la apuesta
-  ganadorId: string; // googleId del usuario
+  ganadorId: string;
   resultadoJson?: string;
 }
 
 export interface BackendPartidaResponseDto {
   id: string; // UUID de la partida
   apuestaId: string; // UUID de la apuesta
-  ganadorId?: string; // googleId del usuario
+  ganadorId?: string;
   validada: boolean;
   validadaEn?: string; // date-time
 }
 
 export interface BackendMatchResultDto {
-    apuesta1Id: string; // UUID
-    apuesta2Id: string; // UUID
-    monto: number;
-    modoJuego: string;
+  apuesta1Id: string; // UUID
+  apuesta2Id: string; // UUID
+  monto: number;
+  modoJuego: string;
 }
 
 
 // Tipos de la Aplicación Frontend
 
 export interface User {
-  id: string; // Representa el googleId, es el identificador principal
+  id: string;
   username: string;
   email: string;
   phone: string;
@@ -109,7 +120,7 @@ export type MatchResult = 'win' | 'loss' | 'draw';
 
 export interface Bet {
   id: string; // ID de la apuesta (del backend, UUID)
-  userId: string; // googleId del usuario
+  userId: string;
   matchId?: string; // Si se mapea a una partida/chat local
   amount: number;
   opponentTag?: string;
@@ -124,7 +135,7 @@ export interface Bet {
 export interface ChatMessage {
   id: string;
   matchId: string; // Este es el ID de la apuesta del backend (UUID)
-  senderId: string; // googleId del usuario o 'system'
+  senderId: string;
   text: string;
   timestamp: string;
   isSystemMessage?: boolean;

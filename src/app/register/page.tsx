@@ -142,9 +142,9 @@ export default function RegisterPage() {
       avatarUrl: googleAuthData.avatarUrl,
       phone: profileData.phone,
       friendLink: profileData.friendLink,
-      // clashTag is now extracted in the server action
     };
 
+    console.log(fullRegistrationData)
     const result = await registerUserAction(fullRegistrationData);
 
     if (result.user) {
