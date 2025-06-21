@@ -22,13 +22,27 @@ export async function registerUserAction(
   data: RegisterWithGoogleData
 ): Promise<{ user: User | null; error: string | null }> {
   
-  // El DTO del backend para el registro ahora incluirá 'id' como el googleId.
+  // --- Server-side validation and extraction ---
+  let extractedClashTag = '';
+  if (data.friendLink) {
+      const tagRegex = /tag=([0289PYLQGRJCUV]{3,})/i;
+      const match = data.friendLink.match(tagRegex);
+      if (match && match[1]) {
+          extractedClashTag = `#${match[1].toUpperCase()}`;
+      }
+  }
+
+  if (!extractedClashTag) {
+      return { user: null, error: "No se pudo extraer el Tag de Clash Royale del link de amigo. Por favor, verifica el link." };
+  }
+  // --- End server-side logic ---
+
   const backendPayload: BackendUsuarioDto = {
     id: data.googleId, // Se envía el googleId como el 'id' del usuario
     nombre: data.username,
     email: data.email,
     telefono: data.phone,
-    tagClash: data.clashTag,
+    tagClash: extractedClashTag,
     linkAmistad: data.friendLink,
     // saldo y reputacion los inicializa el backend
   };

@@ -103,7 +103,7 @@ export type RegisterWithGoogleData = {
   avatarUrl?: string;
   phone: string;
   friendLink: string;
-  clashTag: string;
+  clashTag?: string;
 };
 
 

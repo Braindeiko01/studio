@@ -27,8 +27,11 @@ const completeProfileSchema = z.object({
   username: z.string().min(3, "El nombre de usuario debe tener al menos 3 caracteres").max(20, "El nombre de usuario no puede exceder los 20 caracteres"),
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   friendLink: z.string()
-    .url({ message: "El link de invitación debe ser una URL válida." })
-    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/[a-z]{2}\/?\?.*tag=[0289PYLQGRJCUV]{3,}/, { message: "Formato de link de invitación de Clash Royale inválido o no contiene un tag." }),
+    .min(1, "El link de amigo es requerido.")
+    .url({ message: "Por favor, introduce una URL válida." })
+    .refine(link => link.startsWith("https://link.clashroyale.com/"), {
+        message: "El link debe ser de Clash Royale (link.clashroyale.com)"
+    }),
 });
 
 export default function RegisterPage() {
@@ -132,21 +135,6 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
 
-    let extractedClashTag = '';
-    if (profileData.friendLink) {
-        const tagRegex = /tag=([0289PYLQGRJCUV]{3,})/i;
-        const match = profileData.friendLink.match(tagRegex);
-        if (match && match[1]) {
-            extractedClashTag = `#${match[1].toUpperCase()}`;
-        }
-    }
-
-    if (!extractedClashTag) {
-        toast({ title: "Error de Formulario", description: "No se pudo extraer el Tag de Clash Royale del link de amigo. Por favor, verifica el link.", variant: "destructive" });
-        setIsLoading(false);
-        return;
-    }
-
     const fullRegistrationData: RegisterWithGoogleData = {
       googleId: googleAuthData.googleId,
       email: googleAuthData.email,
@@ -154,7 +142,7 @@ export default function RegisterPage() {
       avatarUrl: googleAuthData.avatarUrl,
       phone: profileData.phone,
       friendLink: profileData.friendLink,
-      clashTag: extractedClashTag,
+      // clashTag is now extracted in the server action
     };
 
     const result = await registerUserAction(fullRegistrationData);
