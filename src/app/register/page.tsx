@@ -26,7 +26,7 @@ const completeProfileSchema = z.object({
   phone: z.string().min(7, "El número de teléfono debe tener al menos 7 dígitos").regex(/^\d+$/, "El número de teléfono solo debe contener dígitos"),
   friendLink: z.string()
     .url({ message: "El link de invitación debe ser una URL válida." })
-    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\?tag=([0289PYLQGRJCUV]{3,})&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido." }),
+    .regex(/^https:\/\/link\.clashroyale\.com\/invite\/friend\/es\/?\?tag=([0289PYLQGRJCUV]{3,})&token=[a-z0-9]+&platform=(android|ios)$/, { message: "Formato de link de invitación de Clash Royale inválido." }),
 });
 
 export default function RegisterPage() {
@@ -88,14 +88,16 @@ export default function RegisterPage() {
       avatarUrl: `https://placehold.co/100x100.png?text=G${Math.floor(Math.random()*10)}`,
     };
 
-    const response = await loginWithGoogleAction(simulatedGoogleData.googleId);
+    const response = await loginWithGoogleAction(simulatedGoogleData);
     if(response.user){
-        auth.login(response.user);
-        router.push('/');
-    } else if (response.needsProfileCompletion){
-        setGoogleAuthData(simulatedGoogleData);
-        setStep(2);
-        toast({ title: "Conectado con Google", description: `Hola ${simulatedGoogleData.username}, por favor completa tu perfil.`});
+        if (response.needsProfileCompletion) {
+            setGoogleAuthData(response.user as GoogleAuthValues);
+            setStep(2);
+            toast({ title: "Conectado con Google", description: `Hola ${response.user.username}, por favor completa tu perfil.`});
+        } else {
+            auth.login(response.user as User);
+            router.push('/');
+        }
     } else {
         toast({ title: "Error", description: response.error || "No se pudo iniciar sesión.", variant: "destructive" });
     }
