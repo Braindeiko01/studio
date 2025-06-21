@@ -16,37 +16,23 @@ import type {
 } from '@/types';
 
 // URL del Backend. Se usa la variable de entorno o la URL de producción de Railway por defecto.
-const BACKEND_URL = process.env.BACKEND_API_URL || 'https://crduels-crduelsproduction.up.railway.app';
+//const BACKEND_URL = process.env.BACKEND_API_URL || 'https://crduels-crduelsproduction.up.railway.app';
+const BACKEND_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
+
 
 export async function registerUserAction(
   data: RegisterWithGoogleData
 ): Promise<{ user: User | null; error: string | null }> {
-  
-  // --- Server-side validation and extraction ---
-  let extractedClashTag = '';
-  if (data.friendLink) {
-      const tagRegex = /tag=([0289PYLQGRJCUV]{3,})/i;
-      const match = data.friendLink.match(tagRegex);
-      if (match && match[1]) {
-          extractedClashTag = `#${match[1].toUpperCase()}`;
-      }
-  }
-
-  if (!extractedClashTag) {
-      return { user: null, error: "No se pudo extraer el Tag de Clash Royale del link de amigo. Por favor, verifica el link." };
-  }
-  // --- End server-side logic ---
 
   const backendPayload: BackendUsuarioDto = {
-    id: data.googleId, // Se envía el googleId como el 'id' del usuario
+    id: data.googleId,
     nombre: data.username,
     email: data.email,
     telefono: data.phone,
-    tagClash: extractedClashTag,
     linkAmistad: data.friendLink,
-    // saldo y reputacion los inicializa el backend
   };
 
+  console.log("id google: " + data.googleId)
   try {
     const response = await fetch(`${BACKEND_URL}/api/usuarios/registro`, {
       method: 'POST',
@@ -54,19 +40,11 @@ export async function registerUserAction(
       body: JSON.stringify(backendPayload),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: `Error del servidor: ${response.status}` }));
-      if (errorData && errorData.message) {
-        return { user: null, error: errorData.message };
-      }
-      return { user: null, error: `Error ${response.status} al registrar usuario. ${errorData.details || ''}`.trim() };
-    }
-
     const registeredBackendUser = await response.json() as BackendUsuarioDto;
 
     // Asumimos que el backend devuelve el mismo 'id' (googleId) que se envió.
     if (!registeredBackendUser.id) {
-        return { user: null, error: "El backend no devolvió un ID para el usuario registrado." };
+      return { user: null, error: "El backend no devolvió un ID para el usuario registrado." };
     }
 
     const appUser: User = {
@@ -81,7 +59,7 @@ export async function registerUserAction(
       avatarUrl: data.avatarUrl || `https://placehold.co/100x100.png?text=${registeredBackendUser.nombre[0]?.toUpperCase() || 'U'}`,
       reputacion: registeredBackendUser.reputacion ?? 0,
     };
-    
+
     return { user: appUser, error: null };
 
   } catch (error: any) {
@@ -93,7 +71,7 @@ export async function registerUserAction(
 export async function loginWithGoogleAction(
   googleAuthData: GoogleAuthValues
 ): Promise<{ user: User | null; error: string | null; needsProfileCompletion?: boolean }> {
-  
+
   // Intenta obtener el usuario del backend usando el googleId
   const existingUserResult = await getUserDataAction(googleAuthData.googleId);
 
@@ -125,7 +103,7 @@ export async function getUserDataAction(userId: string): Promise<{ user: User | 
 
     // Asumimos que backendUser.id es el googleId
     if (!backendUser.id) {
-        return { user: null, error: "El backend devolvió datos de usuario incompletos (sin ID)." };
+      return { user: null, error: "El backend devolvió datos de usuario incompletos (sin ID)." };
     }
 
     const appUser: User = {
@@ -161,7 +139,8 @@ export async function updateUserProfileInMemoryAction(
   // Esta función es llamada por AuthContext para actualizar el estado local.
   // En un escenario real con endpoint de backend, aquí se haría la llamada PUT.
   // Por ahora, solo devolvemos los datos actualizados como si la operación hubiera sido exitosa.
-  return { user: updatedData as User, error: null }; 
+  console.log("todo: ERROR DEBERÍA SER UN ENDPOINT DEL BACKEND")
+  return { user: updatedData as User, error: null };
 }
 
 
@@ -203,7 +182,7 @@ export async function createBetAction(
     monto: amount,
     modoJuego: gameMode,
   };
-   try {
+  try {
     const response = await fetch(`${BACKEND_URL}/api/apuestas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

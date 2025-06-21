@@ -1,14 +1,11 @@
 
 // Tipos del Backend (basados en OpenAPI y adaptados para googleId como PK)
 export interface BackendUsuarioDto {
-  id?: string; // Ahora representa el googleId, enviado en registro y recibido en respuestas
+  id: string; // Ahora representa el googleId, enviado en registro y recibido en respuestas
   nombre: string;
   email: string;
   telefono: string; // Pattern: ^\\+?\\d{7,15}$
-  tagClash: string; // Pattern: ^#?[A-Z0-9]{5,12}$
-  linkAmistad?: string; // Pattern: ^(https://link\.clashroyale\.com/invite/friend\\?tag=[A-Z0-9]+)?$
-  saldo?: number; // minimum: 0.0
-  reputacion?: number; // integer
+  linkAmistad: string; // Pattern: ^(https://link\.clashroyale\.com/invite/friend\\?tag=[A-Z0-9]+)?$
 }
 
 export interface BackendTransaccionRequestDto {
