@@ -210,7 +210,8 @@ export async function matchmakingAction(
     modoJuego: gameMode,
   };
   try {
-    const response = await fetch(`${BACKEND_URL}/api/matchmaking/ejecutar`, {
+    const response = await fetch(`${BACKEND_URL}/api/matchmaking`, {
+
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -225,6 +226,13 @@ export async function matchmakingAction(
       };
     }
     const match = (await response.json()) as BackendMatchmakingResponseDto;
+    if (!match.apuestaId || !match.jugadorOponenteId || !match.jugadorOponenteTag) {
+      return {
+        match: null,
+        error: 'Respuesta inválida del servidor en matchmaking.',
+      };
+    }
+
     return { match, error: null };
   } catch (error: any) {
     console.error('Error en matchmakingAction:', error);
