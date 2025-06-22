@@ -62,10 +62,8 @@ const MatchingPageContent = () => {
     setBetId(null);
 
     const initBet = async () => {
-      if (!user.id) return;
-      console.log('Creando apuesta para matchmaking:', { userId: user.id, mode });
+      if (!user.id) return; 
       const result = await createBetAction(user.id, 6000, mode); // Use user.id (googleId)
-      console.log('Resultado de createBetAction:', result);
       if (result.bet && result.bet.id) {
         setBetId(result.bet.id); // Store the bet's UUID from backend
         setStatus(`Apuesta ${result.bet.id} creada. Buscando oponente para ${modeDisplay}...`);
@@ -77,8 +75,7 @@ const MatchingPageContent = () => {
         // Simulate finding an opponent
         const searchTimeoutId = setTimeout(() => {
           const randomOpponent = mockOpponents[Math.floor(Math.random() * mockOpponents.length)];
-          console.log('Oponente simulado encontrado:', randomOpponent);
-          setOpponent(randomOpponent);
+          setOpponent(randomOpponent); 
           clearInterval(progressInterval); 
           setProgress(100);
           // TODO: En un sistema real, aquí se podría llamar a un endpoint para unir la apuesta `betId`
@@ -102,15 +99,13 @@ const MatchingPageContent = () => {
 
   // Effect to handle navigation once an opponent is found
   useEffect(() => {
-    if (opponent && user && mode && modeDisplay && router && betId) {
-        console.log('Oponente listo para iniciar duelo:', opponent);
+    if (opponent && user && mode && modeDisplay && router && betId) { 
         setStatus(`¡Oponente Encontrado: ${opponent.clashTag} para ${modeDisplay}!`);
 
         const matchStartTimeoutId = setTimeout(() => {
             setStatus(`¡Duelo iniciando con ${opponent.clashTag} (${modeDisplay})!`);
             // El matchId para el chat ahora es el ID de la apuesta del backend (betId - UUID)
             // Se pasa el googleId del oponente para referencia en el chat si es necesario.
-            console.log('Navegando a chat con betId', betId);
             router.push(`/chat/${betId}?opponentTag=${encodeURIComponent(opponent.clashTag)}&opponentAvatar=${encodeURIComponent(opponent.avatarUrl)}&opponentGoogleId=${encodeURIComponent(opponent.id)}`);
         }, 3000);
 

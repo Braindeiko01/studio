@@ -209,7 +209,6 @@ export async function matchmakingAction(
     usuarioId: userGoogleId,
     modoJuego: gameMode,
   };
-  console.log('Llamando a /api/matchmaking/ejecutar con payload:', payload);
   try {
     const response = await fetch(`${BACKEND_URL}/api/matchmaking/ejecutar`, {
 
@@ -227,7 +226,6 @@ export async function matchmakingAction(
       };
     }
     const match = (await response.json()) as BackendMatchmakingResponseDto;
-    console.log('Respuesta de matchmaking:', match);
     if (!match.apuestaId || !match.jugadorOponenteId || !match.jugadorOponenteTag) {
       return {
         match: null,
