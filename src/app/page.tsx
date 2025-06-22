@@ -13,7 +13,8 @@ import { Label } from '@/components/ui/label';
 import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
 import { Coins, UploadCloud, Swords, Layers, Banknote, Loader2 } from 'lucide-react';
-import { requestTransactionAction } from '@/lib/actions';
+import { requestTransactionAction, matchmakingAction } from '@/lib/actions';
+
 import useTransactionUpdates from '@/hooks/useTransactionUpdates';
 
 
@@ -46,20 +47,45 @@ const HomePageContent = () => {
     return <p>Cargando datos del usuario...</p>;
   }
 
-  const handleFindMatch = (mode: 'classic' | 'triple-draft') => {
-    if (!user.id) { // user.id es googleId
-      toast({ title: "Error de Usuario", description: "Falta el ID de usuario.", variant: "destructive" });
+  const handleFindMatch = async (mode: 'classic' | 'triple-draft') => {
+    if (!user.id) {
+      toast({
+        title: "Error de Usuario",
+        description: "Falta el ID de usuario.",
+        variant: "destructive",
+      });
       return;
     }
     if (user.balance < 6000) {
       toast({
         title: "Saldo Insuficiente",
-        description: "Necesitas al menos $6,000 COP para buscar un duelo. Por favor, deposita saldo.",
+        description:
+          "Necesitas al menos $6,000 COP para buscar un duelo. Por favor, deposita saldo.",
         variant: "destructive",
       });
       return;
     }
-    router.push(`/matching?mode=${mode}`);
+
+    const result = await matchmakingAction(user.id, mode);
+    if (result.match) {
+      const opp = result.match;
+      router.push(
+        `/chat/${opp.apuestaId}?opponentTag=${encodeURIComponent(
+          opp.jugadorOponenteTag
+        )}&opponentGoogleId=${encodeURIComponent(
+          opp.jugadorOponenteId
+        )}&opponentAvatar=${encodeURIComponent(
+          opp.jugadorOponenteAvatarUrl || ''
+        )}`
+      );
+    } else {
+      toast({
+        title: "Error de Emparejamiento",
+        description: result.error || "No se pudo encontrar un oponente.",
+        variant: "destructive",
+      });
+      setIsSearching(false);
+    }
   };
 
   // Deposit Modal Logic
@@ -187,12 +213,11 @@ const HomePageContent = () => {
     setIsModeModalOpen(true);
   };
 
-  const handleModeSelect = (mode: 'classic' | 'triple-draft') => {
+  const handleModeSelect = async (mode: 'classic' | 'triple-draft') => {
     setIsModeModalOpen(false);
     setIsSearching(true);
-    setTimeout(() => {
-      handleFindMatch(mode);
-    }, 300);
+    await handleFindMatch(mode);
+
   };
 
 
