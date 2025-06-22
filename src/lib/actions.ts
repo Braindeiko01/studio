@@ -210,7 +210,7 @@ export async function matchmakingAction(
     modoJuego: gameMode,
   };
   try {
-    const response = await fetch(`${BACKEND_URL}/api/matchmaking`, {
+    const response = await fetch(`${BACKEND_URL}/api/matchmaking/ejecutar`, {
 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
