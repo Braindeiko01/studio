@@ -37,13 +37,14 @@ const HomePageContent = () => {
   const [isSearching, setIsSearching] = useState(false);
 
   const handleMatchFound = (data: { apuestaId: string; jugadorOponenteId: string; jugadorOponenteTag: string; }) => {
+    console.log('Match encontrado via SSE:', data);
     setIsSearching(false);
     router.push(
       `/chat/${data.apuestaId}?opponentTag=${encodeURIComponent(data.jugadorOponenteTag)}&opponentGoogleId=${encodeURIComponent(data.jugadorOponenteId)}`
     );
   };
 
-  useMatchmakingSse(isSearching ? user.id : undefined, handleMatchFound);
+  useMatchmakingSse(isSearching ? user?.id : undefined, handleMatchFound);
 
   useEffect(() => {
     console.log("¡La página de inicio se ha cargado en el frontend! Puedes ver este mensaje en la consola del navegador.");
@@ -75,7 +76,9 @@ const HomePageContent = () => {
       return;
     }
 
+    console.log('Iniciando matchmaking con', { userId: user.id, mode });
     const result = await matchmakingAction(user.id, mode);
+    console.log('Resultado de matchmakingAction:', result);
 
     if (result.error) {
       toast({

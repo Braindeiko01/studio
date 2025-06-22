@@ -17,6 +17,7 @@ export default function useMatchmakingSse(playerId: string | undefined, onMatch:
     if (!playerId) return;
 
     const url = `${BACKEND_URL}/sse/match?jugadorId=${encodeURIComponent(playerId)}`;
+    console.log('Abriendo conexión SSE de matchmaking:', url);
     const es = new EventSource(url);
     eventSourceRef.current = es;
 
@@ -37,6 +38,7 @@ export default function useMatchmakingSse(playerId: string | undefined, onMatch:
     };
 
     return () => {
+      console.log('Cerrando conexión SSE de matchmaking');
       es.close();
     };
   }, [playerId, onMatch, toast]);
