@@ -12,8 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
-import { Coins, UploadCloud, Swords, Layers, Banknote } from 'lucide-react';
-import { requestTransactionAction } from '@/lib/actions';
+import { Coins, UploadCloud, Swords, Layers, Banknote, Loader2 } from 'lucide-react';
+import { requestTransactionAction, matchmakingAction } from '@/lib/actions';
 import useTransactionUpdates from '@/hooks/useTransactionUpdates';
 
 
@@ -32,6 +32,9 @@ const HomePageContent = () => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
 
+  const [isModeModalOpen, setIsModeModalOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
   useEffect(() => {
     console.log("¡La página de inicio se ha cargado en el frontend! Puedes ver este mensaje en la consola del navegador.");
     if (user) {
@@ -43,20 +46,45 @@ const HomePageContent = () => {
     return <p>Cargando datos del usuario...</p>;
   }
 
-  const handleFindMatch = (mode: 'classic' | 'triple-draft') => {
-    if (!user.id) { // user.id es googleId
-      toast({ title: "Error de Usuario", description: "Falta el ID de usuario.", variant: "destructive" });
+  const handleFindMatch = async (mode: 'classic' | 'triple-draft') => {
+    if (!user.id) {
+      toast({
+        title: "Error de Usuario",
+        description: "Falta el ID de usuario.",
+        variant: "destructive",
+      });
       return;
     }
     if (user.balance < 6000) {
       toast({
         title: "Saldo Insuficiente",
-        description: "Necesitas al menos $6,000 COP para buscar un duelo. Por favor, deposita saldo.",
+        description:
+          "Necesitas al menos $6,000 COP para buscar un duelo. Por favor, deposita saldo.",
         variant: "destructive",
       });
       return;
     }
-    router.push(`/matching?mode=${mode}`);
+
+    const result = await matchmakingAction(user.id, mode);
+    if (result.match) {
+      const opp = result.match;
+      router.push(
+        `/chat/${opp.apuestaId}?opponentTag=${encodeURIComponent(
+          opp.jugadorOponenteTag
+        )}&opponentGoogleId=${encodeURIComponent(
+          opp.jugadorOponenteId
+        )}&opponentAvatar=${encodeURIComponent(
+          opp.jugadorOponenteAvatarUrl || ''
+        )}`
+      );
+    } else {
+      toast({
+        title: "Error de Emparejamiento",
+        description: result.error || "No se pudo encontrar un oponente.",
+        variant: "destructive",
+      });
+      setIsSearching(false);
+    }
   };
 
   // Deposit Modal Logic
@@ -171,6 +199,25 @@ const HomePageContent = () => {
     }
   };
 
+  // Matchmaking Modal Logic
+  const handleOpenModeModal = () => {
+    if (user.balance < 6000) {
+      toast({
+        title: "Saldo Insuficiente",
+        description: "Necesitas al menos $6,000 COP para buscar un duelo. Por favor, deposita saldo.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsModeModalOpen(true);
+  };
+
+  const handleModeSelect = async (mode: 'classic' | 'triple-draft') => {
+    setIsModeModalOpen(false);
+    setIsSearching(true);
+    await handleFindMatch(mode);
+  };
+
 
   return (
     <div className="space-y-8">
@@ -231,27 +278,62 @@ const HomePageContent = () => {
             <br /> Necesitas tener al menos $6,000 COP de saldo.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <CardContent className="p-6 flex justify-center">
           <CartoonButton
-            onClick={() => handleFindMatch('classic')}
+            onClick={handleOpenModeModal}
             className="w-full sm:w-auto"
             iconLeft={<Swords className="h-6 w-6" />}
             disabled={user.balance < 6000}
           >
-            Batalla Clásica
-          </CartoonButton>
-          <CartoonButton
-            onClick={() => handleFindMatch('triple-draft')}
-            className="w-full sm:w-auto"
-            variant="accent" 
-            iconLeft={<Layers className="h-6 w-6" />}
-            disabled={user.balance < 6000}
-          >
-            Triple Elección
+            Buscar Oponente
           </CartoonButton>
         </CardContent>
       </Card>
 
+      {/* Mode Select Modal */}
+      {isModeModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in-up">
+          <Card className="w-full max-w-md shadow-xl border-2 border-accent">
+            <CardHeader>
+              <CardTitle className="text-3xl font-headline text-accent text-center">Selecciona Modo</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 flex flex-col gap-4">
+              <CartoonButton
+                onClick={() => handleModeSelect('classic')}
+                className="w-full"
+                iconLeft={<Swords className="h-6 w-6" />}
+              >
+                Batalla Clásica
+              </CartoonButton>
+              <CartoonButton
+                onClick={() => handleModeSelect('triple-draft')}
+                className="w-full"
+                variant="accent"
+                iconLeft={<Layers className="h-6 w-6" />}
+              >
+                Triple Elección
+              </CartoonButton>
+            </CardContent>
+            <CardFooter className="flex justify-end p-6 pt-0">
+              <CartoonButton variant="secondary" size="small" onClick={() => setIsModeModalOpen(false)}>Cancelar</CartoonButton>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {/* Searching Overlay */}
+      {isSearching && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in-up">
+          <Card className="w-full max-w-sm shadow-xl border-2 border-accent text-center space-y-6 p-6">
+            <CardHeader>
+              <CardTitle className="text-2xl font-headline text-primary">Buscando oponente...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Loader2 className="h-12 w-12 mx-auto text-accent animate-spin" />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Deposit Modal */}
       {isDepositModalOpen && (

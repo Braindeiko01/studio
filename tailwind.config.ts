@@ -115,7 +115,8 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'subtle-bounce': 'subtle-bounce 1.5s ease-in-out infinite',
-        'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+        // speed up modal entrance to avoid perceived lag
+        'fade-in-up': 'fade-in-up 0.2s ease-out forwards',
       },
     },
   },
