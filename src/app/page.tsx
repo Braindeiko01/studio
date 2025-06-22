@@ -14,7 +14,6 @@ import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
 import { Coins, UploadCloud, Swords, Layers, Banknote, Loader2 } from 'lucide-react';
 import { requestTransactionAction, matchmakingAction } from '@/lib/actions';
-
 import useTransactionUpdates from '@/hooks/useTransactionUpdates';
 
 
@@ -220,6 +219,10 @@ const HomePageContent = () => {
 
   };
 
+  const handleCancelSearch = () => {
+    setIsSearching(false);
+  };
+
 
   return (
     <div className="space-y-8">
@@ -333,6 +336,11 @@ const HomePageContent = () => {
             <CardContent>
               <Loader2 className="h-12 w-12 mx-auto text-accent animate-spin" />
             </CardContent>
+            <CardFooter className="flex justify-end">
+              <CartoonButton variant="secondary" size="small" onClick={handleCancelSearch}>
+                Cancelar
+              </CartoonButton>
+            </CardFooter>
           </Card>
         </div>
       )}
