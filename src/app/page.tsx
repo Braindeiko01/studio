@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Coins, UploadCloud, Swords, Layers, Banknote, Loader2 } from 'lucide-react';
 import { requestTransactionAction, matchmakingAction } from '@/lib/actions';
 import useTransactionUpdates from '@/hooks/useTransactionUpdates';
+import useMatchmakingSse from '@/hooks/useMatchmakingSse';
 
 
 const HomePageContent = () => {
@@ -34,6 +35,15 @@ const HomePageContent = () => {
 
   const [isModeModalOpen, setIsModeModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+
+  const handleMatchFound = (data: { apuestaId: string; jugadorOponenteId: string; jugadorOponenteTag: string; }) => {
+    setIsSearching(false);
+    router.push(
+      `/chat/${data.apuestaId}?opponentTag=${encodeURIComponent(data.jugadorOponenteTag)}&opponentGoogleId=${encodeURIComponent(data.jugadorOponenteId)}`
+    );
+  };
+
+  useMatchmakingSse(isSearching ? user.id : undefined, handleMatchFound);
 
   useEffect(() => {
     console.log("¡La página de inicio se ha cargado en el frontend! Puedes ver este mensaje en la consola del navegador.");
@@ -67,29 +77,24 @@ const HomePageContent = () => {
 
     const result = await matchmakingAction(user.id, mode);
 
+    if (result.error) {
+      toast({
+        title: "Error de Emparejamiento",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSearching(true);
+
     if (
       result.match &&
       result.match.apuestaId &&
       result.match.jugadorOponenteId &&
       result.match.jugadorOponenteTag
     ) {
-      const opp = result.match;
-      router.push(
-        `/chat/${opp.apuestaId}?opponentTag=${encodeURIComponent(
-          opp.jugadorOponenteTag
-        )}&opponentGoogleId=${encodeURIComponent(
-          opp.jugadorOponenteId
-        )}&opponentAvatar=${encodeURIComponent(
-          opp.jugadorOponenteAvatarUrl || ''
-        )}`
-      );
-    } else {
-      toast({
-        title: "Error de Emparejamiento",
-        description: result.error || "No se pudo encontrar un oponente.",
-        variant: "destructive",
-      });
-      setIsSearching(false);
+      handleMatchFound(result.match);
     }
   };
 
@@ -220,7 +225,6 @@ const HomePageContent = () => {
 
   const handleModeSelect = async (mode: 'classic' | 'triple-draft') => {
     setIsModeModalOpen(false);
-    setIsSearching(true);
     await handleFindMatch(mode);
   };
 
