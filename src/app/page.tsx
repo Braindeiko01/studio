@@ -66,7 +66,12 @@ const HomePageContent = () => {
     }
 
     const result = await matchmakingAction(user.id, mode);
-    if (result.match) {
+    if (
+      result.match &&
+      result.match.apuestaId &&
+      result.match.jugadorOponenteId &&
+      result.match.jugadorOponenteTag
+    ) {
       const opp = result.match;
       router.push(
         `/chat/${opp.apuestaId}?opponentTag=${encodeURIComponent(

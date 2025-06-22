@@ -225,6 +225,12 @@ export async function matchmakingAction(
       };
     }
     const match = (await response.json()) as BackendMatchmakingResponseDto;
+    if (!match.apuestaId || !match.jugadorOponenteId || !match.jugadorOponenteTag) {
+      return {
+        match: null,
+        error: 'Respuesta inválida del servidor en matchmaking.',
+      };
+    }
     return { match, error: null };
   } catch (error: any) {
     console.error('Error en matchmakingAction:', error);
