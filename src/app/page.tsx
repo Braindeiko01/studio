@@ -14,6 +14,7 @@ import { SaldoIcon, FindMatchIcon } from '@/components/icons/ClashRoyaleIcons';
 import { useToast } from "@/hooks/use-toast";
 import { Coins, UploadCloud, Swords, Layers, Banknote, Loader2 } from 'lucide-react';
 import { requestTransactionAction, matchmakingAction } from '@/lib/actions';
+
 import useTransactionUpdates from '@/hooks/useTransactionUpdates';
 
 
@@ -216,6 +217,7 @@ const HomePageContent = () => {
     setIsModeModalOpen(false);
     setIsSearching(true);
     await handleFindMatch(mode);
+
   };
 
 
