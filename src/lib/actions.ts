@@ -211,6 +211,7 @@ export async function matchmakingAction(
   };
   try {
     const response = await fetch(`${BACKEND_URL}/api/matchmaking`, {
+
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -231,6 +232,7 @@ export async function matchmakingAction(
         error: 'Respuesta inválida del servidor en matchmaking.',
       };
     }
+
     return { match, error: null };
   } catch (error: any) {
     console.error('Error en matchmakingAction:', error);

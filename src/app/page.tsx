@@ -66,6 +66,7 @@ const HomePageContent = () => {
     }
 
     const result = await matchmakingAction(user.id, mode);
+
     if (
       result.match &&
       result.match.apuestaId &&
