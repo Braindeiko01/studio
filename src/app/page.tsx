@@ -216,6 +216,7 @@ const HomePageContent = () => {
     setIsModeModalOpen(false);
     setIsSearching(true);
     await handleFindMatch(mode);
+
   };
 
   const handleCancelSearch = () => {
