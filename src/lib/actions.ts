@@ -12,6 +12,7 @@ import type {
   BackendApuestaResponseDto,
   BackendPartidaRequestDto,
   BackendPartidaResponseDto,
+  BackendMatchmakingResponseDto,
   BackendMatchResultDto,
   RegistrarUsuarioRequest,
 } from '@/types';
@@ -197,6 +198,40 @@ export async function createBetAction(
   } catch (error: any) {
     console.error("Error en createBetAction:", error);
     return { bet: null, error: error.message || "Error de red al crear apuesta." };
+  }
+}
+
+export async function matchmakingAction(
+  userGoogleId: string,
+  gameMode: string
+): Promise<{ match: BackendMatchmakingResponseDto | null; error: string | null }> {
+  const payload = {
+    usuarioId: userGoogleId,
+    modoJuego: gameMode,
+  };
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/matchmaking`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: `Error del servidor: ${response.status}` }));
+      return {
+        match: null,
+        error: errorData.message || `Error ${response.status} en matchmaking.`,
+      };
+    }
+    const match = (await response.json()) as BackendMatchmakingResponseDto;
+    return { match, error: null };
+  } catch (error: any) {
+    console.error('Error en matchmakingAction:', error);
+    return {
+      match: null,
+      error: error.message || 'Error de red en matchmaking.',
+    };
   }
 }
 

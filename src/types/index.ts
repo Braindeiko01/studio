@@ -72,6 +72,13 @@ export interface BackendMatchResultDto {
   modoJuego: string;
 }
 
+export interface BackendMatchmakingResponseDto {
+  apuestaId: string; // UUID de la apuesta resultante
+  jugadorOponenteId: string; // googleId del oponente
+  jugadorOponenteTag: string;
+  jugadorOponenteAvatarUrl?: string;
+}
+
 
 // Tipos de la Aplicación Frontend
 
